@@ -73,25 +73,7 @@ $total_expense_sum = $total_expenses->fetchColumn() ?: 0;
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased" x-data="{ showEditModal: false, showDocModal: false, showExpenseModal: false, activeCat: 'all', activeCatLabel: 'همه', expenseForm: {id: '', amount: '', description: '', expense_date: '', receipt_no: '', notes: '', category_id: '1'} }">
 
-    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <?php if ($is_admin): ?>
-                <a href="people-list.php" class="text-primary-900 font-bold text-sm flex items-center gap-2 group">
-                    <span class="group-hover:translate-x-1 transition-transform">→</span>
-                    بازگشت به لیست
-                </a>
-                <?php else: ?>
-                <a href="index.php" class="text-primary-900 font-bold text-sm flex items-center gap-2">بنیاد حکمت</a>
-                <?php endif; ?>
-                <span class="text-gray-300">/</span>
-                <span class="font-bold text-gray-900"><?php echo htmlspecialchars((string)$person['name'] . ' ' . $person['surname']); ?></span>
-            </div>
-            <div class="flex items-center gap-4 text-xs font-bold text-gray-500">
-                <span>کد مددجو: #<?php echo toFarsiDigits($person['code']); ?></span>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <main class="container mx-auto px-6 py-12 max-w-6xl">
         <!-- Row 1: Top Widgets (Documents & Profile) -->

@@ -163,29 +163,14 @@ if (isset($_GET['logout'])) {
         }
     </style>
 </head>
-<body class="bg-academy-950 text-slate-100 font-sans min-h-screen"
+<body class="bg-academy-950 text-slate-100 font-sans min-h-screen overflow-x-hidden"
     x-data="{
         activeTab: 'dashboard',
         showUploadModal: false
     }">
 
     <!-- Top Navigation -->
-    <nav class="bg-academy-900/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <span class="w-8 h-8 bg-gradient-to-tr from-teal-500 to-cyan-500 rounded-full flex items-center justify-center font-bold text-white shadow-lg">🎓</span>
-                <span class="font-black text-lg text-teal-400">آکادمی استعدادهای حکمت</span>
-            </div>
-            
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
-                    <img src="<?php echo $avatar_url; ?>" alt="آواتار" class="w-6 h-6 rounded-full bg-slate-800">
-                    <span class="text-xs font-bold text-slate-300"><?php echo htmlspecialchars($student['name'] . ' ' . $student['surname']); ?></span>
-                </div>
-                <a href="?logout=true" class="bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all">خروج</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/dashboard-nav.php'; ?>
 
     <!-- Main Container -->
     <div class="container mx-auto px-4 py-8 lg:py-12">

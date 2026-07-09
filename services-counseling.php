@@ -37,28 +37,7 @@
 <body class="bg-gray-50 font-sans text-gray-800">
 
     <!-- Navbar -->
-    <nav class="fixed w-full z-50 transition-all duration-300 bg-white/10 backdrop-blur-md border-b border-white/20">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-6">
-                <a href="login.php"
-                    class="hidden md:flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-teal-400 to-teal-600 text-white rounded-full font-bold shadow-lg hover:shadow-teal-500/30 transition-all transform hover:-translate-y-1">ورود
-                    / ثبت‌نام</a>
-                <div class="hidden md:flex gap-8 text-white/90">
-                    <a href="index.php" class="hover:text-teal-300 transition-colors font-medium">صفحه اصلی</a>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="text-right">
-                    <div class="text-xl font-black text-white tracking-tight">بنیاد نیکوکاری <span
-                            class="text-teal-300">حکمت</span></div>
-                </div>
-                <div
-                    class="relative w-12 h-12 flex items-center justify-center bg-gradient-to-br from-teal-400 to-teal-600 rounded-2xl shadow-inner border border-white/20 overflow-hidden">
-                    <span class="text-2xl font-black text-white">م</span>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <!-- Hero Header -->
     <header class="relative h-[60vh] flex items-center justify-center bg-primary-900 text-white overflow-hidden">

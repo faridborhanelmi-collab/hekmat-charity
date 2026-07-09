@@ -75,28 +75,7 @@ function getGenderFromName($name) {
 <body class="bg-gray-900 text-gray-100 font-sans antialiased overflow-x-hidden selection:bg-teal-500 selection:text-white">
 
     <!-- Navigation -->
-    <nav class="fixed w-full z-50 glass transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
-                <div class="flex-shrink-0 flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-teal-400 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
-                        <span class="text-white font-black text-xl">ح</span>
-                    </div>
-                    <span class="font-black text-xl tracking-tight text-white">بنیاد نیکوکاری حکمت</span>
-                </div>
-                <div class="hidden md:block">
-                    <div class="ml-10 flex items-baseline space-x-4 space-x-reverse">
-                        <a href="index.php" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">صفحه اصلی</a>
-                        <a href="#about" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">درباره پویش</a>
-                        <a href="#how-it-works" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">چگونه کار می‌کند؟</a>
-                    </div>
-                </div>
-                <div>
-                    <a href="login.php" class="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all border border-white/10 hover:border-white/30 shadow-lg backdrop-blur-sm">ورود حامیان</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <!-- Hero Section -->
     <div class="relative min-h-screen flex items-center justify-center pt-20" style="background-image: url('assets/images/campaign_hero.jpg?v=3'); background-size: cover; background-position: center; background-attachment: fixed;">

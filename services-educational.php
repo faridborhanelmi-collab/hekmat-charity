@@ -37,49 +37,7 @@
 <body class="bg-gray-50 font-sans text-gray-800">
 
     <!-- Navbar -->
-    <nav class="fixed w-full z-50 transition-all duration-300 bg-white/10 backdrop-blur-md border-b border-white/20">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-
-            <!-- Left Side: Login & Menu -->
-            <div class="flex items-center gap-6">
-                <a href="login.php"
-                    class="hidden md:flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-teal-400 to-teal-600 text-white rounded-full font-bold shadow-lg hover:shadow-teal-500/30 transition-all transform hover:-translate-y-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                    </svg>
-                    <span>ورود / ثبت‌نام</span>
-                </a>
-
-                <div class="hidden md:flex gap-8 text-white/90">
-                    <a href="index.php" class="hover:text-teal-300 transition-colors font-medium relative group">
-                        صفحه اصلی
-                        <span
-                            class="absolute bottom-0 right-0 w-0 h-0.5 bg-teal-300 transition-all group-hover:w-full"></span>
-                    </a>
-                    <a href="#" class="hover:text-teal-300 transition-colors font-medium">بورس حکمت</a>
-                    <a href="#" class="hover:text-teal-300 transition-colors font-medium">خدمات ما</a>
-                    <a href="#" class="hover:text-teal-300 transition-colors font-medium">درباره ما</a>
-                </div>
-            </div>
-
-            <!-- Right Side: Logo & Brand -->
-            <div class="flex items-center gap-3">
-                <div class="text-right">
-                    <div class="text-xl font-black text-white tracking-tight">بنیاد نیکوکاری <span
-                            class="text-teal-300">حکمت</span></div>
-                    <div class="text-[10px] text-teal-100/80 font-light tracking-widest uppercase">Hekmat Charity
-                        Foundation</div>
-                </div>
-                <div
-                    class="relative w-12 h-12 flex items-center justify-center bg-gradient-to-br from-teal-400 to-teal-600 rounded-2xl shadow-inner border border-white/20 overflow-hidden">
-                    <span class="text-2xl font-black text-white">م</span>
-                </div>
-            </div>
-
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <!-- Hero Header -->
     <header class="relative h-[60vh] flex items-center justify-center bg-primary-900 text-white overflow-hidden">

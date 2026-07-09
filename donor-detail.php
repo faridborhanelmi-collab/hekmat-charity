@@ -57,18 +57,7 @@ $documents = $doc_stmt->fetchAll();
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased" x-data="{ showEditModal: false, showDocModal: false, showDonationModal: false, donationForm: {id: '', amount: '', month: '', year: '', date: '', description: '', receipt_no: ''} }">
 
-    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <a href="donors-list.php" class="text-primary-900 font-bold text-sm flex items-center gap-2 group">
-                    <span class="group-hover:translate-x-1 transition-transform">→</span>
-                    بازگشت به لیست نیکوکاران
-                </a>
-                <span class="text-gray-300">/</span>
-                <span class="font-bold text-gray-900"><?php echo $donor['name'] . ' ' . $donor['surname']; ?></span>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <main class="container mx-auto px-6 py-12 max-w-6xl">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">

@@ -62,36 +62,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
 
 <body class="bg-[#fafafa] text-gray-800 font-sans antialiased">
 
-    <nav class="fixed top-0 w-full z-[100] bg-white/85 backdrop-blur-xl border-b border-white/20">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center relative">
-            <div class="flex items-center gap-6">
-                <div class="flex items-center gap-2 border-l pl-4 border-gray-200">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-tr from-primary-600 to-primary-400 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md">
-                        م</div>
-                    <span class="text-lg font-black text-primary-900">مهربانی</span>
-                </div>
-                <div class="hidden md:flex items-center space-x-reverse space-x-6 text-sm font-bold text-gray-600">
-                    <a href="about.php" class="hover:text-primary-600">داستان ما</a>
-                    <a href="burs-hekmat.php" class="hover:text-primary-600">بورس حکمت</a>
-                    <a href="campaign.php" class="text-teal-600 font-black hover:text-teal-700 bg-teal-50 px-3 py-1 rounded-lg shadow-sm border border-teal-100">پویش حکمت‌یار</a>
-                    <a href="donors-list.php" class="hover:text-primary-600">نیکوکاران</a>
-                    <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                        <a href="admin/index.php" class="text-teal-600 hover:text-teal-700 bg-teal-50 px-3 py-1 rounded-lg">پنل مدیریت</a>
-                        <a href="admin-logout.php" class="hover:text-red-500">خروج</a>
-                    <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
-                        <a href="person-detail.php?id=<?php echo $_SESSION['related_id']; ?>" class="text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1 rounded-lg">پرونده من</a>
-                        <a href="admin-logout.php" class="hover:text-red-500">خروج</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <?php if (!isset($_SESSION['is_admin'])): ?>
-            <a href="login.php"
-                class="bg-primary-800 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-primary-700 transition-all shadow-md">ورود
-                به پنل کاربری</a>
-            <?php endif; ?>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <header class="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden pt-20 pb-48">
         <div class="absolute inset-0 bg-cover bg-center fixed-bg"

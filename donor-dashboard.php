@@ -186,30 +186,14 @@ function toFarsi($str) {
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased"
+<body class="bg-gray-50 text-gray-800 font-sans antialiased overflow-x-hidden"
     x-data="{
         activeSponId: '<?php echo !empty($sponsored_students) ? $sponsored_students[0]['spon_id'] : ''; ?>',
         activeStudentId: '<?php echo !empty($sponsored_students) ? $sponsored_students[0]['student_id'] : ''; ?>'
     }">
 
     <!-- Navbar -->
-    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <a href="index.php" class="text-primary-900 font-black text-xl flex items-center gap-2">
-                    <div class="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white text-sm">م</div>
-                    بنیاد حکمت
-                </a>
-                <span class="text-gray-300">/</span>
-                <span class="font-bold text-gray-600">پورتال حامیان بورس تحصیلی</span>
-            </div>
-            
-            <div class="flex items-center gap-4">
-                <span class="text-xs text-gray-400 font-bold">خوش آمدید، <strong class="text-gray-800"><?php echo htmlspecialchars($donor['name'] . ' ' . $donor['surname']); ?></strong></span>
-                <a href="admin-logout.php" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all">🚪 خروج</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/dashboard-nav.php'; ?>
 
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-12 max-w-6xl">

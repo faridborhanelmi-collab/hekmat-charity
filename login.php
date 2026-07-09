@@ -152,16 +152,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </script>
 </head>
-<body class="bg-gray-900 min-h-screen flex items-center justify-center relative overflow-hidden">
+<body class="bg-gray-900 min-h-[100dvh] flex items-center justify-center relative overflow-y-auto sm:overflow-hidden p-4">
 
     <!-- Background Elements -->
-    <div class="absolute inset-0 z-0">
+    <div class="absolute inset-0 z-0 pointer-events-none">
         <div class="absolute inset-0 bg-gradient-to-br from-primary-900 via-gray-900 to-black opacity-90"></div>
         <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=2670')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
     </div>
 
     <!-- Glass Card -->
-    <div class="relative z-10 w-full max-w-md bg-white/10 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/10 overflow-hidden m-4">
+    <div class="relative z-10 w-full max-w-md bg-white/10 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/10 overflow-hidden">
         
         <div class="p-10 text-white">
             <div class="text-center mb-10">

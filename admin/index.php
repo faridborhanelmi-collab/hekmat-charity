@@ -50,25 +50,12 @@ $all_birthdays = array_merge($birthdays_students, $birthdays_donors);
         }
     </script>
 </head>
-<body class="bg-gray-50 font-sans text-gray-800 antialiased">
+<body class="bg-gray-50 font-sans text-gray-800 antialiased overflow-x-hidden">
 
-    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <a href="../index.php" class="text-primary-900 font-black text-xl">بنیاد حکمت</a>
-                <span class="text-gray-300">/</span>
-                <span class="font-bold text-gray-600 underline decoration-teal-400 decoration-2">میز کار مدیریت</span>
-            </div>
-            <div class="flex items-center gap-6">
-                <div class="flex flex-col text-left">
-                    <span class="text-[10px] text-gray-400 font-bold">کاربر فعال</span>
-                    <span class="text-xs font-black text-primary-900">فرید برهان علمی - مدیرعامل</span>
-                </div>
-                <a href="../admin-logout.php" class="bg-red-50 text-red-500 p-2 rounded-xl hover:bg-red-500 hover:text-white transition-all" title="خروج">🚪</a>
-            </div>
-        </div>
-    </nav>
-
+    <?php 
+    $base_url = '../';
+    include '../includes/dashboard-nav.php'; 
+    ?>
     <main class="container mx-auto px-6 py-12">
         <div class="flex flex-col lg:flex-row gap-8">
             

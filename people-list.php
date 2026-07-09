@@ -33,22 +33,7 @@ $students = $stmt->fetchAll();
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased">
 
-    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <a href="index.php" class="text-primary-900 font-black text-xl flex items-center gap-2">
-                    <div class="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm">م</div>
-                    بنیاد حکمت
-                </a>
-                <span class="text-gray-300">/</span>
-                <span class="font-bold text-gray-600">افراد تحت پوشش</span>
-            </div>
-            <div class="flex items-center gap-4">
-                <span class="text-xs font-bold text-gray-500">مدیر سیستم: <?php echo $_SESSION['user_name']; ?></span>
-                <a href="admin-logout.php" class="text-red-500 text-xs font-bold hover:bg-red-50 px-3 py-1 rounded-lg transition-all">خروج</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <header class="bg-primary-900 text-white py-12">
         <div class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
