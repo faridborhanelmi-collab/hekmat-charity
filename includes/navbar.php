@@ -49,22 +49,22 @@ if (session_status() === PHP_SESSION_NONE) {
     </div>
 
     <!-- Mobile Menu Drawer -->
-    <div id="mobile-menu" class="hidden md:hidden bg-white/98 backdrop-blur-xl border-t border-gray-100 absolute w-full left-0 top-full shadow-2xl transition-all duration-300">
-        <div class="flex flex-col px-6 py-4 space-y-4 text-center font-bold text-gray-700">
-            <a href="about.php" class="hover:text-primary-600 py-3 border-b border-gray-50">داستان ما</a>
-            <a href="burs-hekmat.php" class="hover:text-primary-600 py-3 border-b border-gray-50">بورس حکمت</a>
-            <a href="campaign.php" class="text-teal-600 hover:text-teal-700 py-3 border-b border-gray-50">پویش حکمت‌یار</a>
-            <a href="donors-list.php" class="hover:text-primary-600 py-3 border-b border-gray-50">نیکوکاران</a>
+    <div id="mobile-menu" class="hidden md:hidden bg-black/85 backdrop-blur-2xl border-t border-white/10 absolute w-full left-0 top-full h-[100dvh] shadow-2xl transition-all duration-300">
+        <div class="flex flex-col px-6 py-8 space-y-4 text-center font-bold text-white">
+            <a href="about.php" class="hover:text-primary-300 py-4 border-b border-white/10">داستان ما</a>
+            <a href="burs-hekmat.php" class="hover:text-primary-300 py-4 border-b border-white/10">بورس حکمت</a>
+            <a href="campaign.php" class="text-teal-300 hover:text-teal-400 py-4 border-b border-white/10">پویش حکمت‌یار</a>
+            <a href="donors-list.php" class="hover:text-primary-300 py-4 border-b border-white/10">نیکوکاران</a>
             
             <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                <a href="admin/index.php" class="text-teal-600 hover:text-teal-700 py-3 border-b border-gray-50">پنل مدیریت</a>
-                <a href="admin-logout.php" class="text-red-500 hover:text-red-600 py-3 border-b border-gray-50">خروج</a>
+                <a href="admin/index.php" class="text-teal-300 hover:text-teal-400 py-4 border-b border-white/10">پنل مدیریت</a>
+                <a href="admin-logout.php" class="text-red-400 hover:text-red-300 py-4 border-b border-white/10">خروج</a>
             <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
-                <a href="person-detail.php?id=<?php echo $_SESSION['related_id']; ?>" class="text-blue-600 hover:text-blue-700 py-3 border-b border-gray-50">پرونده من</a>
-                <a href="admin-logout.php" class="text-red-500 hover:text-red-600 py-3 border-b border-gray-50">خروج</a>
+                <a href="person-detail.php?id=<?php echo $_SESSION['related_id']; ?>" class="text-blue-300 hover:text-blue-400 py-4 border-b border-white/10">پرونده من</a>
+                <a href="admin-logout.php" class="text-red-400 hover:text-red-300 py-4 border-b border-white/10">خروج</a>
             <?php else: ?>
-                <div class="py-4">
-                    <a href="login.php" class="bg-primary-800 text-white px-8 py-3 rounded-full font-bold text-base hover:bg-primary-700 transition-all shadow-md inline-block w-full max-w-xs">ورود به پنل کاربری</a>
+                <div class="py-8">
+                    <a href="login.php" class="bg-primary-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-primary-500 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] inline-block w-full max-w-xs">ورود به پنل کاربری</a>
                 </div>
             <?php endif; ?>
         </div>
