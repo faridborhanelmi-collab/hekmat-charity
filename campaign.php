@@ -71,6 +71,13 @@ function getGenderFromName($name) {
         .delay-2 { animation-delay: 0.4s; }
         .delay-3 { animation-delay: 0.6s; }
     </style>
+
+    <!-- iOS PWA/Homescreen Setup -->
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
+    <link rel="icon" type="image/png" href="logo.png">
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans antialiased overflow-x-hidden selection:bg-teal-500 selection:text-white">
 

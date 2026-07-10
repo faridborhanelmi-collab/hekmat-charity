@@ -85,6 +85,13 @@ $encoded_msg = urlencode($message);
             .receipt-card { border: none !important; box-shadow: none !important; margin: 0 !important; width: 100% !important; }
         }
     </style>
+
+    <!-- iOS PWA/Homescreen Setup -->
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
+    <link rel="icon" type="image/png" href="logo.png">
 </head>
 <body class="bg-gray-100 font-sans text-gray-800 antialiased min-h-screen flex flex-col justify-between">
 

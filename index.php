@@ -58,6 +58,13 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
             animation: shimmer 2.5s infinite;
         }
     </style>
+
+    <!-- iOS PWA/Homescreen Setup -->
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
+    <link rel="icon" type="image/png" href="logo.png">
 </head>
 
 <body class="bg-[#fafafa] text-gray-800 font-sans antialiased">

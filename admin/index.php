@@ -49,6 +49,13 @@ $all_birthdays = array_merge($birthdays_students, $birthdays_donors);
             }
         }
     </script>
+
+    <!-- iOS PWA/Homescreen Setup -->
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
+    <link rel="icon" type="image/png" href="logo.png">
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased overflow-x-hidden">
 

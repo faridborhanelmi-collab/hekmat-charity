@@ -66,6 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     </script>
+
+    <!-- iOS PWA/Homescreen Setup -->
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
+    <link rel="icon" type="image/png" href="logo.png">
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
     <div class="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full text-center">

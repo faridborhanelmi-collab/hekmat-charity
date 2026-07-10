@@ -70,6 +70,13 @@ $total_expense_sum = $total_expenses->fetchColumn() ?: 0;
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(20,184,166,0.3); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(20,184,166,0.5); }
     </style>
+
+    <!-- iOS PWA/Homescreen Setup -->
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
+    <link rel="icon" type="image/png" href="logo.png">
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased" x-data="{ showEditModal: false, showDocModal: false, showExpenseModal: false, activeCat: 'all', activeCatLabel: 'همه', expenseForm: {id: '', amount: '', description: '', expense_date: '', receipt_no: '', notes: '', category_id: '1'} }">
 
