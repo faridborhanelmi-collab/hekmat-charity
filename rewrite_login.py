@@ -1,4 +1,6 @@
-<?php
+import os
+
+login_content = """<?php
 session_start();
 require_once 'includes/db.php';
 
@@ -222,3 +224,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </script>
 </body>
 </html>
+"""
+
+with open('login.php', 'w') as f:
+    f.write(login_content)
+

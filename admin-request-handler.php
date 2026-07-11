@@ -7,6 +7,11 @@ if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     die(json_encode(['success' => false, 'message' => 'دسترسی غیرمجاز']));
 }
 
+if (!isset($_SESSION['is_superadmin']) || !$_SESSION['is_superadmin']) {
+    die(json_encode(['success' => false, 'message' => 'شما فقط دسترسی مشاهده دارید و مجاز به ایجاد تغییرات نیستید.']));
+}
+
+
 $action = isset($_POST['action']) ? $_POST['action'] : '';
 
 // --- HELPER: Secure File Upload ---

@@ -1,0 +1,6 @@
+*.zip
+__pycache__/
+.DS_Store
+scratch/
+php_server_log.txt
+*.mp4
