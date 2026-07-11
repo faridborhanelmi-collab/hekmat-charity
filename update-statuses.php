@@ -14,6 +14,7 @@ echo "<!DOCTYPE html><html lang='fa' dir='rtl'><head><meta charset='UTF-8'><titl
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
     <link rel="icon" type="image/png" href="logo.png">
+    <link rel="manifest" href="manifest.json">
 </head><body style='font-family: Tahoma, sans-serif; padding: 40px;'>";
 echo "<h2>عملیات بروزرسانی وضعیت مددجویان</h2>";
 

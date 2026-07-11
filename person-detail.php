@@ -77,6 +77,7 @@ $total_expense_sum = $total_expenses->fetchColumn() ?: 0;
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
     <link rel="icon" type="image/png" href="logo.png">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased" x-data="{ showEditModal: false, showDocModal: false, showExpenseModal: false, activeCat: 'all', activeCatLabel: 'همه', expenseForm: {id: '', amount: '', description: '', expense_date: '', receipt_no: '', notes: '', category_id: '1'} }">
 

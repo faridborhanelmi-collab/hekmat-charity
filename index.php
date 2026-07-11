@@ -65,6 +65,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
     <link rel="icon" type="image/png" href="logo.png">
+    <link rel="manifest" href="manifest.json">
 </head>
 
 <body class="bg-[#fafafa] text-gray-800 font-sans antialiased">

@@ -169,6 +169,7 @@ if (isset($_GET['logout'])) {
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
     <link rel="icon" type="image/png" href="logo.png">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body class="bg-academy-950 text-slate-100 font-sans min-h-screen overflow-x-hidden"
     x-data="{
