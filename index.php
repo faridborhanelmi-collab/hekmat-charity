@@ -679,6 +679,15 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
         </div>
     </div>
 
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 
 </html>

@@ -108,5 +108,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
         <?php endif; ?>
     </div>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 </html>

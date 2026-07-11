@@ -187,5 +187,14 @@ $encoded_msg = urlencode($message);
         بنیاد نیکوکاری حکمت © 2026 - طراحی بومی حسابداری
     </footer>
 
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 </html>

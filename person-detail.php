@@ -751,5 +751,14 @@ $total_expense_sum = $total_expenses->fetchColumn() ?: 0;
         }
     </script>
 
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 </html>

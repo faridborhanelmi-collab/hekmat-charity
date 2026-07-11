@@ -104,6 +104,15 @@
         <p class="opacity-50">© 1403 بنیاد نیکوکاری حکمت.</p>
     </footer>
 
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 
 </html>

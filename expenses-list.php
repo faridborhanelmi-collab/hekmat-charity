@@ -288,5 +288,14 @@ foreach ($cat_totals as $id => $val) {
             </div>
         </div>
     </div>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 </html>

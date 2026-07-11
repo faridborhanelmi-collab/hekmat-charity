@@ -173,5 +173,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     </div>
 
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 </html>

@@ -47,5 +47,14 @@ try {
     echo "<p style='color: red;'>خطا در دیتابیس: " . htmlspecialchars($e->getMessage()) . "</p>";
 }
 
-echo "</body></html>";
+echo "
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
+</body></html>";
 ?>

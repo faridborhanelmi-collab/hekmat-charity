@@ -180,5 +180,14 @@ $all_birthdays = array_merge($birthdays_students, $birthdays_donors);
         </div>
     </main>
 
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 </html>
