@@ -7,7 +7,8 @@ if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     die("دسترسی غیرمجاز. لطفا ابتدا لاگین کنید.");
 }
 
-echo "<!DOCTYPE html><html lang='fa' dir='rtl'><head><meta charset='UTF-8'><title>بروزرسانی وضعیت مددجویان</title>
+?>
+<!DOCTYPE html><html lang='fa' dir='rtl'><head><meta charset='UTF-8'><title>بروزرسانی وضعیت مددجویان</title>
     <!-- iOS PWA/Homescreen Setup -->
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,8 +16,9 @@ echo "<!DOCTYPE html><html lang='fa' dir='rtl'><head><meta charset='UTF-8'><titl
     <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="manifest" href="manifest.json">
-</head><body style='font-family: Tahoma, sans-serif; padding: 40px;'>";
-echo "<h2>عملیات بروزرسانی وضعیت مددجویان</h2>";
+</head><body style='font-family: Tahoma, sans-serif; padding: 40px;'>
+<h2>عملیات بروزرسانی وضعیت مددجویان</h2>
+<?php
 
 try {
     // 1. Find all active students who did NOT receive a bursary in the latest month (1405/03/01 onwards)

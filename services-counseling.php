@@ -1,45 +1,12 @@
+<?php
+$page_title = 'خدمات مشاوره تحصیلی و روانشناسی | بنیاد نیکوکاری حکمت';
+$page_desc = 'ارائه مشاوره‌های تخصصی فردی، روانشناختی، هدایت تحصیلی و کارگاه‌های مهارت‌های زندگی برای توانمندسازی همه‌جانبه دانش‌آموزان تحت پوشش خیریه حکمت.';
+?>
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa-IR" dir="rtl">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خدمات مشاوره | بنیاد نیکوکاری حکمت</title>
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"
-        type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Vazirmatn', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            900: '#0c4a6e',
-                        },
-                        accent: {
-                            500: '#f43f5e',
-                            600: '#e11d48',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <!-- iOS PWA/Homescreen Setup -->
-    <link rel="apple-touch-icon" href="logo.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="manifest" href="manifest.json">
+    <?php include 'includes/head.php'; ?>
 </head>
 
 <body class="bg-gray-50 font-sans text-gray-800">
@@ -48,51 +15,62 @@
     <?php include 'includes/navbar.php'; ?>
 
     <!-- Hero Header -->
-    <header class="relative h-[60vh] flex items-center justify-center bg-primary-900 text-white overflow-hidden">
+    <header class="relative h-[60vh] flex items-center justify-center bg-primary-900 text-white overflow-hidden pt-20">
         <div class="absolute inset-0 bg-cover bg-center opacity-30"
             style="background-image: url('https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?q=80&w=2669');">
         </div>
-        <div class="relative z-10 text-center">
-            <h1 class="text-5xl font-black mb-4">خدمات مشاوره</h1>
-            <p class="text-xl text-teal-100">آرامش ذهن، کلید موفقیت در تمام مراحل زندگی است</p>
+        <div class="relative z-10 text-center px-4">
+            <h1 class="text-4xl md:text-5xl font-black mb-4">خدمات مشاوره و روانشناسی</h1>
+            <p class="text-lg md:text-xl text-teal-100">آرامش ذهن و خودباوری، کلید شکوفایی استعدادهای درخشان</p>
         </div>
     </header>
 
     <!-- Content Section -->
-    <section class="py-20 container mx-auto px-6">
-        <div class="bg-white rounded-3xl shadow-xl p-10 md:p-16 leading-loose text-lg text-gray-700">
+    <section class="py-20 container mx-auto px-6 max-w-5xl">
+        <div class="bg-white rounded-3xl shadow-xl p-8 md:p-14 leading-loose text-lg text-gray-700">
 
             <div class="grid md:grid-cols-2 gap-12 mb-16 items-center">
                 <div class="border-r-4 border-teal-500 pr-6">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-6">همراهی در لحظات سخت</h2>
-                    <p class="text-gray-500 mb-4 text-justify">
-                        ما در بنیاد حکمت معتقدیم که حمایت عاطفی و روانی به اندازه حمایت مالی اهمیت دارد. تیم مشاوران
-                        خبره ما آماده‌اند تا در کنار دانش‌آموزان و خانواده‌هایشان باشند.
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6">همراهی گام‌به‌گام در مسیر موفقیت</h2>
+                    <p class="text-gray-600 mb-4 text-justify">
+                        ما در بنیاد حکمت معتقدیم که حمایت عاطفی و روانشناختی به اندازه حمایت مالی اهمیت دارد. بسیاری از نخبگان مناطق محروم با موانع روانی، اضطراب کنکور و کمبود اعتمادبه‌نفس مواجه هستند. تیم مشاوران خبره ما با برگزاری جلسات منظم، فضایی امن برای رشد همه‌جانبه دانش‌آموزان فراهم می‌کنند.
                     </p>
-                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg text-sm text-blue-800">
-                        <span class="font-bold block mb-2">محل درج متن اصلی:</span>
-                        لطفاً توضیحات کامل خدمات مشاوره (فردی، گروهی، خانواده) را از فایل PDF کپی کرده و در اینجا قرار
-                        دهید.
+                    <div class="bg-teal-50 border border-teal-200 p-4 rounded-2xl text-sm text-teal-900">
+                        <span class="font-bold block mb-1">🎯 هدف واحد مشاوره:</span>
+                        ارتقای سلامت روان، افزایش انگیزه پیشرفت تحصیلی و هدایت شغلی هدفمند متناسب با تیپ شخصیتی هر دانش‌پژوه.
                     </div>
                 </div>
 
-                <!-- Generated Image Display -->
                 <div class="relative group">
-                    <div
-                        class="absolute -inset-1 bg-gradient-to-r from-teal-600 to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200">
-                    </div>
-                    <img src="counseling_session_1768832961834.png" alt="جلسه مشاوره"
-                        class="relative rounded-2xl shadow-xl w-full h-auto object-cover ring-4 ring-white">
+                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800&auto=format&fit=crop" 
+                         alt="جلسه مشاوره تحصیلی و روانشناسی دانش‌آموزان بنیاد حکمت"
+                         width="600" 
+                         height="400"
+                         loading="lazy" 
+                         decoding="async"
+                         class="relative rounded-2xl shadow-xl w-full h-auto object-cover ring-4 ring-teal-100">
                 </div>
             </div>
 
-            <div class="bg-indigo-50 p-8 rounded-2xl">
-                <h3 class="text-xl font-bold text-indigo-900 mb-4">سرفصل‌های خدمات مشاوره</h3>
-                <ul class="list-disc list-inside space-y-2 text-indigo-800">
-                    <li>مشاوره تحصیلی و برنامه‌ریزی درسی</li>
-                    <li>مشاوره روانشناختی و کنترل استرس</li>
-                    <li>کارگاه‌های مهارت‌های زندگی</li>
-                    <li>(سایر موارد را اضافه کنید...)</li>
+            <div class="bg-indigo-50/70 border border-indigo-100 p-8 rounded-2xl">
+                <h3 class="text-xl font-bold text-indigo-900 mb-4">سرفصل‌های خدمات تخصصی مشاوره بنیاد</h3>
+                <ul class="grid md:grid-cols-2 gap-4 text-indigo-900 text-sm font-medium">
+                    <li class="flex items-center gap-2">
+                        <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                        مشاوره فردی تخصصی و برنامه‌ریزی درسی هفتگی
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                        آزمون‌های روان‌سنجی، استعدادیابی و هوش هرمان
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                        کارگاه‌های مدیریت استرس کنکور و فنون تست‌زنی
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                        جلسات توانمندسازی و گفتگوی همدلانه با اولیای دانش‌آموزان
+                    </li>
                 </ul>
             </div>
 
@@ -101,18 +79,16 @@
 
     <!-- Footer -->
     <footer class="bg-gray-900 text-white py-12 text-center">
-        <p class="opacity-50">© 1403 بنیاد نیکوکاری حکمت.</p>
+        <p class="opacity-70 text-sm">© ۱۴۰۳ بنیاد نیکوکاری حکمت (شماره ثبت ۷۷۰۷). تمامی حقوق محفوظ است.</p>
     </footer>
 
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js');
-    });
-  }
-</script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
 
 </body>
-
 </html>

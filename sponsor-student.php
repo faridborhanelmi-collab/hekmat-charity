@@ -10,7 +10,7 @@ if ($student_id <= 0) {
 
 // Check login
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php?redirect=" . urlencode("sponsor-student.php?id=" . $student_id));
+    header("Location: login.php?redirect=" . urlencode("/sponsor-student.php?id=" . $student_id));
     exit();
 }
 
@@ -19,7 +19,30 @@ if ($_SESSION['role'] !== 'benefactor' && $_SESSION['role'] !== 'admin') {
     die("فقط حامیان می‌توانند دانش‌آموزی را برای حمایت انتخاب کنند. لطفاً با حساب کاربری حامی وارد شوید.");
 }
 
-$donor_id = $_SESSION['role'] === 'admin' ? 1 : $_SESSION['related_id'];
+$donor_id = $_SESSION['role'] === 'admin' ? 1 : (!empty($_SESSION['related_id']) ? (int)$_SESSION['related_id'] : (int)($_SESSION['user_id'] ?? 0));
+
+if ($donor_id <= 0) {
+    // بازیابی یا ایجاد رکورد متناظر در جدول donors برای نیکوکار
+    $u_stmt = $pdo->prepare("SELECT full_name, phone_number FROM users WHERE id = ?");
+    $u_stmt->execute([$_SESSION['user_id'] ?? 0]);
+    $u_row = $u_stmt->fetch();
+    if ($u_row && !empty($u_row['phone_number'])) {
+        $d_stmt = $pdo->prepare("SELECT id FROM donors WHERE phone = ?");
+        $d_stmt->execute([$u_row['phone_number']]);
+        $found_d = $d_stmt->fetch();
+        if ($found_d) {
+            $donor_id = (int)$found_d['id'];
+        } else {
+            $parts = explode(' ', trim($u_row['full_name'] ?: 'حامی نیکوکار'));
+            $first_n = $parts[0];
+            $last_n = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '';
+            $ins_d = $pdo->prepare("INSERT INTO donors (name, surname, phone, total_donated) VALUES (?, ?, ?, 0)");
+            $ins_d->execute([$first_n, $last_n, $u_row['phone_number']]);
+            $donor_id = (int)$pdo->lastInsertId();
+        }
+        $_SESSION['related_id'] = $donor_id;
+    }
+}
 
 // Check if already sponsored
 $stmt = $pdo->prepare("SELECT count(*) FROM sponsorships WHERE student_id = ? AND status = 'active'");
@@ -54,9 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تایید حمایت | بنیاد حکمت</title>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+<style>
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:100;font-display:swap;src:url('/assets/fonts/Vazirmatn-100.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:300;font-display:swap;src:url('/assets/fonts/Vazirmatn-300.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/Vazirmatn-400.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/fonts/Vazirmatn-500.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/Vazirmatn-700.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:900;font-display:swap;src:url('/assets/fonts/Vazirmatn-900.woff2') format('woff2')}
+</style>
+<link rel="stylesheet" href="/assets/tailwind.min.css">
+<script>
         tailwind.config = {
             theme: {
                 extend: {

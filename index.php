@@ -8,26 +8,15 @@ $medical_sum = $pdo->query('SELECT SUM(amount) FROM expenses WHERE category_id =
 $edu_sum = $pdo->query('SELECT SUM(amount) FROM expenses WHERE category_id = 6')->fetchColumn() ?: 0;
 $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE description LIKE '%مشاوره%'")->fetchColumn() ?: 0;
 ?>
-<html lang="fa" dir="rtl" class="scroll-smooth">
+<?php
+$page_title = 'بنیاد نیکوکاری حکمت | خیریه و بورس تحصیلی دانش‌آموزان مستعد';
+$page_desc = 'بنیاد نیکوکاری حکمت مشهد (شماره ثبت ۷۷۰۷)، حامی و بورس‌دهنده دانش‌آموزان نخبه و کم‌برخوردار در سراسر کشور با شفافیت ۱۰۰٪ مالی. حامی آینده نخبگان مستعد باشید.';
+?>
+<!DOCTYPE html>
+<html lang="fa-IR" dir="rtl" class="scroll-smooth">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بنیاد نیکوکاری حکمت | حامی نخبگان مستعد</title>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Vazirmatn', 'sans-serif'] },
-                    colors: { primary: { 900: '#00141e', 800: '#115e59', 600: '#14b8a6' }, accent: { 500: '#fb7185' } },
-                    keyframes: { 'spin-y': { '0%, 80%': { transform: 'rotateY(0deg)' }, '100%': { transform: 'rotateY(360deg)' } } },
-                    animation: { 'spin-y': 'spin-y 7s ease-in-out infinite' }
-                }
-            }
-        }
-    </script>
+    <?php include 'includes/head.php'; ?>
     <style>
         .glass-stats {
             background: rgba(255, 255, 255, 0.1);
@@ -58,14 +47,6 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
             animation: shimmer 2.5s infinite;
         }
     </style>
-
-    <!-- iOS PWA/Homescreen Setup -->
-    <link rel="apple-touch-icon" href="logo.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="manifest" href="manifest.json">
 </head>
 
 <body class="bg-[#fafafa] text-gray-800 font-sans antialiased">
@@ -74,7 +55,8 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
 
     <header class="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden pt-20 pb-48">
         <div class="absolute inset-0 bg-cover bg-center fixed-bg"
-            style="background-image: url('https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=2670');">
+            style="background-image: url('/assets/images/hero-bg-mobile.webp');"
+            data-desktop-bg="/assets/images/hero-bg.webp">
         </div>
         <div class="absolute inset-0 bg-gradient-to-b from-primary-900/90 via-primary-900/60 to-primary-900/95"></div>
         <div class="container mx-auto px-4 relative z-10 text-center text-white">
@@ -83,12 +65,12 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
                 <div class="relative transform transition-all duration-500 hover:scale-110 drop-shadow-2xl">
                     <!-- Shimmer Effect using Mask -->
                     <div class="absolute inset-0 z-10 w-full h-full pointer-events-none"
-                        style="-webkit-mask-image: url('logo.png'); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url('logo.png'); mask-size: contain; mask-repeat: no-repeat; mask-position: center;">
+                        style="-webkit-mask-image: url('/assets/logo-512.webp'); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-image: url('/assets/logo-512.webp'); mask-size: contain; mask-repeat: no-repeat; mask-position: center;">
                         <div
                             class="w-[200%] h-full absolute top-0 left-[-100%] bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer">
                         </div>
                     </div>
-                    <img src="logo.png" alt="لوگو بنیاد نیکوکاری حکمت" class="h-64 md:h-96 w-auto object-contain">
+                    <img src="/assets/logo-512.webp" alt="لوگو بنیاد نیکوکاری حکمت" width="512" height="341" fetchpriority="high" class="h-44 sm:h-64 md:h-96 w-auto object-contain" style="aspect-ratio: 512/341;">
                 </div>
             </div>
             <h1 class="text-5xl md:text-7xl font-black mb-6 leading-tight drop-shadow-2xl">بنیاد نیکوکاری <span
@@ -126,6 +108,77 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
         </div>
     </header>
 
+    <!-- Diamond Talent Campaign Banner (گنج‌های پنهان) -->
+    <section class="relative bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950 overflow-hidden py-16 lg:py-24 border-y border-emerald-500/30">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/15 via-transparent to-transparent pointer-events-none"></div>
+        <div class="container mx-auto px-6 lg:px-12 relative z-10">
+            <div class="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-8 lg:p-14 border border-emerald-400/30 shadow-[0_0_50px_rgba(16,185,129,0.15)]">
+                <div class="grid lg:grid-cols-12 gap-8 items-center">
+                    
+                    <div class="lg:col-span-8 text-right">
+                        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs md:text-sm font-bold mb-6">
+                            <span class="text-base">💎</span>
+                            <span>پویش ملی کشف استعدادهای گمنام بنیاد حکمت</span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </div>
+
+                        <h2 class="text-3xl md:text-5xl font-black text-white mb-6 leading-tight">
+                            گنج‌های <span class="bg-gradient-to-r from-emerald-300 via-teal-300 to-cyan-300 bg-clip-text text-transparent">پنهان</span>
+                        </h2>
+
+                        <p class="text-emerald-100 text-lg md:text-xl font-bold mb-4">
+                            آیا فکر می‌کنی باهوشی اما نمرات مدرسه پتانسیل واقعی‌ات رو نشون نداده؟
+                        </p>
+
+                        <p class="text-gray-300 text-base md:text-lg mb-8 leading-relaxed max-w-2xl">
+                            بنیاد حکمت با یک آزمون آنلاین ۱۵ دقیقه‌ای کاملاً تصویری، هوش و سرعت تحلیل خام تو را می‌سنجد. بدون نیاز به حفظیات درسی و کنکوری، شانس دریافت بورس کامل تحصیلی و مربی‌گری اختصاصی را پیدا کن.
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-4">
+                            <a href="almas.php" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white px-8 py-4 rounded-2xl font-black text-lg shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all transform hover:-translate-y-1 flex items-center gap-2">
+                                <span>ورود به چالش و شرکت در آزمون</span>
+                                <svg class="w-5 h-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                </svg>
+                            </a>
+                            <a href="almas.php#about-campaign" class="bg-white/10 hover:bg-white/20 text-emerald-200 border border-emerald-400/30 px-6 py-4 rounded-2xl font-bold text-base transition-all">
+                                شرایط و مراحل بورس حکمت
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-4 flex justify-center">
+                        <div class="relative w-full max-w-xs p-6 rounded-3xl bg-slate-900/90 border border-emerald-400/30 text-center shadow-2xl">
+                            <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(16,185,129,0.6)] text-4xl">
+                                💎
+                            </div>
+                            <div class="text-2xl font-black text-white mb-2">۱۵ سوال در ۱۵ دقیقه</div>
+                            <div class="text-xs text-emerald-300 font-bold mb-4">آزمون تصویری هوش سیال</div>
+                            <div class="space-y-2 text-xs text-gray-300 text-right border-t border-emerald-500/20 pt-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-emerald-400 font-black">✓</span>
+                                    <span>بدون وابستگی به معدل یا مدرسه</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-emerald-400 font-black">✓</span>
+                                    <span>۱۰۰٪ رایگان برای تمام دانش‌آموزان</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-emerald-400 font-black">✓</span>
+                                    <span>بورس کامل آموزشی و معیشتی برای برگزیدگان</span>
+                                </div>
+                            </div>
+                            <a href="almas.php" class="mt-6 block w-full py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 rounded-xl font-black text-xs transition-all">
+                                شروع آزمون آنلاین &larr;
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Campaign Highlight Banner -->
     <section class="relative bg-gradient-to-br from-teal-900 to-primary-900 overflow-hidden py-24 lg:py-32">
         <div class="absolute inset-0 bg-teal-500/10 mix-blend-overlay"></div>
@@ -157,7 +210,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
                 </div>
                 <div class="hidden lg:block relative">
                     <div class="absolute inset-0 bg-teal-500/30 blur-3xl rounded-full"></div>
-                    <img src="assets/images/campaign_hero.jpg?v=3" alt="کمپین هر حکمتی یک دانش‌آموز" class="relative z-10 w-full h-[450px] object-cover rounded-3xl shadow-2xl border border-white/20 transform transition-transform duration-500 hover:scale-105">
+                    <img src="assets/images/campaign_hero.jpg" alt="کمپین هر حکمتی یک دانش‌آموز" width="800" height="800" loading="lazy" decoding="async" class="relative z-10 w-full h-[450px] object-cover rounded-3xl shadow-2xl border border-white/20 transform transition-transform duration-500 hover:scale-105">
                 </div>
             </div>
         </div>
@@ -270,7 +323,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
             </div>
             <div class="lg:w-1/2 perspective-1000">
                 <div class="w-full max-w-md transform hover:rotate-2 transition-all duration-500 hover:scale-105">
-                    <img src="cart.png" alt="شماره کارت بنیاد نیکوکاری حکمت"
+                    <img src="cart.png" alt="شماره کارت بنیاد نیکوکاری حکمت" width="326" height="174" loading="lazy" decoding="async"
                         class="w-full h-auto rounded-3xl shadow-2xl border border-white/10">
                 </div>
             </div>
@@ -297,7 +350,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
                                 class="opacity-0 group-hover:opacity-100 text-white font-bold bg-black/50 px-4 py-2 rounded-full backdrop-blur-md transition-all transform scale-90 group-hover:scale-100">مشاهده
                                 سند</span>
                         </div>
-                        <img src="doc_license.png" alt="پروانه فعالیت"
+                        <img src="doc_license.png" alt="پروانه فعالیت" width="476" height="341" loading="lazy" decoding="async"
                             class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
                     </div>
                     <h3 class="text-center font-bold mt-4 text-gray-700">پروانه فعالیت</h3>
@@ -312,7 +365,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
                                 class="opacity-0 group-hover:opacity-100 text-white font-bold bg-black/50 px-4 py-2 rounded-full backdrop-blur-md transition-all transform scale-90 group-hover:scale-100">مشاهده
                                 سند</span>
                         </div>
-                        <img src="doc_gazette.png" alt="روزنامه رسمی"
+                        <img src="doc_gazette.png" alt="روزنامه رسمی" width="369" height="507" loading="lazy" decoding="async"
                             class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
                     </div>
                     <h3 class="text-center font-bold mt-4 text-gray-700">روزنامه رسمی (تاسیس)</h3>
@@ -327,7 +380,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
                                 class="opacity-0 group-hover:opacity-100 text-white font-bold bg-black/50 px-4 py-2 rounded-full backdrop-blur-md transition-all transform scale-90 group-hover:scale-100">مشاهده
                                 سند</span>
                         </div>
-                        <img src="doc_registration.png" alt="آگهی ثبت"
+                        <img src="doc_registration.png" alt="آگهی ثبت" width="369" height="505" loading="lazy" decoding="async"
                             class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
                     </div>
                     <h3 class="text-center font-bold mt-4 text-gray-700">آگهی ثبت تغییرات</h3>
@@ -342,7 +395,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
                                 class="opacity-0 group-hover:opacity-100 text-white font-bold bg-black/50 px-4 py-2 rounded-full backdrop-blur-md transition-all transform scale-90 group-hover:scale-100">مشاهده
                                 سند</span>
                         </div>
-                        <img src="doc_letter.png" alt="نامه رسمی"
+                        <img src="doc_letter.png" alt="نامه رسمی" width="366" height="507" loading="lazy" decoding="async"
                             class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
                     </div>
                     <h3 class="text-center font-bold mt-4 text-gray-700">تاییدیه استانداری</h3>
@@ -491,6 +544,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
             <div
                 class="h-32 bg-gradient-to-r from-primary-800 to-primary-600 relative flex items-center justify-center">
                 <button onclick="closeOrgModal()"
+                    aria-label="بستن پنجره"
                     class="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full w-10 h-10 flex items-center justify-center transition-all">✕</button>
                 <h3 id="modalTitle" class="text-3xl font-black text-white drop-shadow-md">عنوان</h3>
                 <!-- Decorative Circles -->
@@ -584,7 +638,7 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
                 const delay = index * 100;
                 const card = `
                     <div class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl hover:shadow-lg transition-all transform opacity-0 translate-y-4 animate-slide-up" style="animation-delay: ${delay}ms; animation-fill-mode: forwards;">
-                        <img src="${person.img}" class="w-16 h-16 rounded-full border-2 border-primary-100 object-cover">
+                        <img src="${person.img}" alt="${person.name}" width="64" height="64" loading="lazy" class="w-16 h-16 rounded-full border-2 border-primary-100 object-cover">
                         <div>
                             <h4 class="font-bold text-lg text-primary-900">${person.name}</h4>
                             <p class="text-sm text-gray-500">${person.role}</p>
@@ -668,13 +722,14 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
     <!-- Video Modal -->
     <div id="videoModal"
         class="fixed inset-0 z-[60] bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-4 transition-all duration-300"
-        onclick="if(event.target === this) { this.classList.add('hidden'); document.getElementById('heroVideo').pause(); }">
+        onclick="if(event.target === this) { closeVideoModal(); }">
         <div class="relative w-full max-w-5xl bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10">
             <button
-                onclick="document.getElementById('videoModal').classList.add('hidden'); document.getElementById('heroVideo').pause()"
+                onclick="closeVideoModal()"
+                aria-label="بستن ویدیو"
                 class="absolute top-4 right-4 z-10 w-10 h-10 bg-white/10 hover:bg-white/30 text-white rounded-full flex items-center justify-center transition-all backdrop-blur-md">✕</button>
-            <video id="heroVideo" controls class="w-full h-auto aspect-video">
-                <source src="briefing.mp4" type="video/mp4">
+            <video id="heroVideo" controls preload="none" class="w-full h-auto aspect-video">
+                <source data-src="briefing.mp4" type="video/mp4">
             </video>
         </div>
     </div>
@@ -686,6 +741,38 @@ $consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE descriptio
       navigator.serviceWorker.register('/sw.js');
     });
   }
+
+  // Video Modal controls (lazy-load video source on demand)
+  function openVideoModal() {
+    var modal = document.getElementById('videoModal');
+    var video = document.getElementById('heroVideo');
+    var srcTag = video.querySelector('source');
+    if (srcTag && srcTag.dataset.src && !srcTag.src) {
+      srcTag.src = srcTag.dataset.src;
+      video.load();
+    }
+    modal.classList.remove('hidden');
+    video.play().catch(function(){});
+  }
+
+  function closeVideoModal() {
+    var modal = document.getElementById('videoModal');
+    var video = document.getElementById('heroVideo');
+    modal.classList.add('hidden');
+    video.pause();
+  }
+
+  // Load high-res hero background on desktop after page load
+  (function() {
+    var heroBg = document.querySelector('.fixed-bg[data-desktop-bg]');
+    if (heroBg && window.innerWidth >= 768) {
+      var img = new Image();
+      img.onload = function() {
+        heroBg.style.backgroundImage = "url('" + heroBg.dataset.desktopBg + "')";
+      };
+      img.src = heroBg.dataset.desktopBg;
+    }
+  })();
 </script>
 
 </body>

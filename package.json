@@ -1,0 +1,19 @@
+{
+  "name": "hekmat-charity",
+  "version": "1.0.0",
+  "description": "Hekmat Charity Portal & Management System",
+  "scripts": {
+    "test": "./run_tests.sh",
+    "test:unit": "php tests/run_unit_tests.php",
+    "test:lint": "php tests/lint_php.php",
+    "test:e2e": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:watch": "node tests/watch_tests.js",
+    "package": "./package_deploy.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

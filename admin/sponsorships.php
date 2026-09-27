@@ -52,6 +52,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $message_status = 'پیام رد و حذف گردید.';
             $message_type = 'success';
         }
+    } elseif ($_POST['action'] === 'approve_sponsorship') {
+        $spon_id = (int)($_POST['sponsorship_id'] ?? 0);
+        if ($spon_id > 0) {
+            $upd = $pdo->prepare("UPDATE sponsorships SET status = 'active' WHERE id = ?");
+            $upd->execute([$spon_id]);
+            $message_status = 'درخواست حمایت تایید شد و بورس تحصیلی با موفقیت فعال گردید.';
+            $message_type = 'success';
+        }
+    } elseif ($_POST['action'] === 'reject_sponsorship') {
+        $spon_id = (int)($_POST['sponsorship_id'] ?? 0);
+        if ($spon_id > 0) {
+            $upd = $pdo->prepare("UPDATE sponsorships SET status = 'rejected' WHERE id = ?");
+            $upd->execute([$spon_id]);
+            $message_status = 'درخواست حمایت لغو گردید.';
+            $message_type = 'success';
+        }
     } elseif ($_POST['action'] === 'update_student_profile') {
         $student_id = (int)($_POST['student_id'] ?? 0);
         $alias = trim($_POST['alias_name'] ?? '');
@@ -68,13 +84,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-// Fetch all sponsorships
+// Fetch all active sponsorships
 $sponsorships = $pdo->query("
-    SELECT s.id as spon_id, s.shares_count, s.start_date, d.name as d_name, d.surname as d_surname, st.name as st_name, st.surname as st_surname, st.alias_name
+    SELECT s.id as spon_id, s.shares_count, s.start_date, s.donor_id, s.student_id, d.name as d_name, d.surname as d_surname, st.name as st_name, st.surname as st_surname, st.alias_name
     FROM sponsorships s
     JOIN donors d ON s.donor_id = d.id
     JOIN students st ON s.student_id = st.id
     WHERE s.status = 'active'
+    ORDER BY s.id DESC
+")->fetchAll();
+
+// Fetch Pending Sponsorship Requests from Website Campaign
+$pending_sponsorships = $pdo->query("
+    SELECT s.id as spon_id, s.shares_count, s.start_date, s.donor_id, s.student_id, 
+           d.name as d_name, d.surname as d_surname, d.phone as d_phone,
+           st.name as st_name, st.surname as st_surname, st.alias_name, st.grade
+    FROM sponsorships s
+    JOIN donors d ON s.donor_id = d.id
+    JOIN students st ON s.student_id = st.id
+    WHERE s.status = 'pending'
     ORDER BY s.id DESC
 ")->fetchAll();
 
@@ -93,7 +121,31 @@ $pending_messages = $pdo->query("
 
 // Donors & Students list for Autocomplete
 $donors = $pdo->query("SELECT id, name, surname, phone FROM donors ORDER BY name ASC")->fetchAll();
-$students = $pdo->query("SELECT id, name, surname, code, alias_name, avatar_url, talents, dreams FROM students ORDER BY name ASC")->fetchAll();
+$students = $pdo->query("SELECT id, name, surname, code, alias_name, avatar_url, talents, dreams FROM students WHERE status IN ('active', 'university') ORDER BY name ASC")->fetchAll();
+
+// Handle Pre-selection from GET parameters
+$pre_donor_id = isset($_GET['donor_id']) ? (int)$_GET['donor_id'] : 0;
+$pre_student_id = isset($_GET['student_id']) ? (int)$_GET['student_id'] : 0;
+$pre_donor_name = '';
+$pre_student_name = '';
+
+if ($pre_donor_id > 0) {
+    foreach ($donors as $d) {
+        if ($d['id'] == $pre_donor_id) {
+            $pre_donor_name = $d['name'] . ' ' . $d['surname'];
+            break;
+        }
+    }
+}
+
+if ($pre_student_id > 0) {
+    foreach ($students as $s) {
+        if ($s['id'] == $pre_student_id) {
+            $pre_student_name = $s['name'] . ' ' . $s['surname'];
+            break;
+        }
+    }
+}
 
 // Helper functions
 function toFarsi($str) {
@@ -108,9 +160,16 @@ function toFarsi($str) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مدیریت بورس‌ها و منتورینگ | بنیاد حکمت</title>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:100;font-display:swap;src:url('/assets/fonts/Vazirmatn-100.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:300;font-display:swap;src:url('/assets/fonts/Vazirmatn-300.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/Vazirmatn-400.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/fonts/Vazirmatn-500.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/Vazirmatn-700.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:900;font-display:swap;src:url('/assets/fonts/Vazirmatn-900.woff2') format('woff2')}
+</style>
+<link rel="stylesheet" href="/assets/tailwind.min.css">
+<script defer src="/assets/alpine.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -132,17 +191,17 @@ function toFarsi($str) {
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased"
     x-data="{
-        showCreateModal: false,
+        showCreateModal: <?php echo ($pre_donor_id > 0 || $pre_student_id > 0) ? 'true' : 'false'; ?>,
         showEditStudentModal: false,
         
-        donorSearch: '',
-        selectedDonorId: '',
-        selectedDonorName: '',
+        donorSearch: <?php echo json_encode($pre_donor_name); ?>,
+        selectedDonorId: <?php echo json_encode($pre_donor_id ? (string)$pre_donor_id : ''); ?>,
+        selectedDonorName: <?php echo json_encode($pre_donor_name); ?>,
         donors: <?php echo htmlspecialchars(json_encode($donors)); ?>,
         
-        studentSearch: '',
-        selectedStudentId: '',
-        selectedStudentName: '',
+        studentSearch: <?php echo json_encode($pre_student_name); ?>,
+        selectedStudentId: <?php echo json_encode($pre_student_id ? (string)$pre_student_id : ''); ?>,
+        selectedStudentName: <?php echo json_encode($pre_student_name); ?>,
         students: <?php echo htmlspecialchars(json_encode($students)); ?>,
         
         // Student Profile Edit fields
@@ -207,7 +266,14 @@ function toFarsi($str) {
             <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col justify-between">
                 <div>
                     <h3 class="text-sm font-bold text-gray-400 mb-2">تعداد بورس‌های تحصیلی فعال</h3>
-                    <div class="text-4xl font-black text-primary-900"><?php echo toFarsi(count($sponsorships)); ?> <span class="text-sm text-gray-400">بورس</span></div>
+                    <div class="flex items-baseline justify-between">
+                        <div class="text-4xl font-black text-primary-900"><?php echo toFarsi(count($sponsorships)); ?> <span class="text-sm text-gray-400">بورس</span></div>
+                        <?php if (!empty($pending_sponsorships)): ?>
+                        <a href="#pending-sponsorships-section" class="bg-amber-100 text-amber-800 text-[11px] font-bold px-3 py-1 rounded-full border border-amber-200 hover:bg-amber-200 transition-colors">
+                            ⏳ <?php echo toFarsi(count($pending_sponsorships)); ?> در انتظار
+                        </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <button @click="showCreateModal = true" class="w-full mt-8 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-2xl transition-all shadow-md">
                     + تعریف بورس تحصیلی جدید
@@ -236,6 +302,60 @@ function toFarsi($str) {
                 </button>
             </div>
         </div>
+
+        <!-- 0. Pending Sponsorships Queue Section -->
+        <?php if (!empty($pending_sponsorships)): ?>
+        <section id="pending-sponsorships-section" class="bg-gradient-to-br from-amber-500/10 via-amber-50 to-white p-8 rounded-[2.5rem] border-2 border-amber-300 shadow-sm mb-12">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+                <h2 class="text-lg font-black text-amber-950 flex items-center gap-2">
+                    <span class="w-3 h-3 bg-amber-500 rounded-full animate-ping"></span>
+                    <span>🌟 درخواست‌های جدید حمایت از پویش حکمت‌یار (وب‌سایت)</span>
+                </h2>
+                <span class="bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 rounded-full text-xs font-black">
+                    <?php echo toFarsi(count($pending_sponsorships)); ?> درخواست در انتظار بررسی
+                </span>
+            </div>
+
+            <div class="space-y-4">
+                <?php foreach ($pending_sponsorships as $ps): ?>
+                <div class="border border-amber-200/80 rounded-3xl p-6 bg-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm">
+                    <div class="space-y-2 flex-1">
+                        <div class="flex flex-wrap items-center gap-2 text-xs">
+                            <span class="bg-teal-100 text-teal-800 font-bold px-3 py-1 rounded-xl">
+                                💎 حامی: <?php echo htmlspecialchars($ps['d_name'] . ' ' . $ps['d_surname']); ?>
+                            </span>
+                            <span class="bg-gray-100 text-gray-700 font-mono font-bold px-3 py-1 rounded-xl dir-ltr" style="direction: ltr;">
+                                📞 <?php echo htmlspecialchars($ps['d_phone'] ?: 'بدون شماره'); ?>
+                            </span>
+                            <span class="text-gray-400 text-[11px]">| تاریخ ثبت: <?php echo toFarsi($ps['start_date'] ?: date('Y/m/d')); ?></span>
+                        </div>
+                        <div class="text-sm font-black text-gray-900 mt-2 flex items-center gap-2">
+                            <span>🎓 دانش‌پژوه انتخابی:</span>
+                            <span class="text-primary-900"><?php echo htmlspecialchars($ps['st_name'] . ' ' . $ps['st_surname']); ?></span>
+                            <span class="text-xs text-gray-500 font-normal">(نام مستعار: <?php echo htmlspecialchars($ps['alias_name'] ?: '---'); ?> - پایه: <?php echo htmlspecialchars($ps['grade'] ?: '---'); ?>)</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <form method="POST" action="">
+                            <input type="hidden" name="action" value="approve_sponsorship">
+                            <input type="hidden" name="sponsorship_id" value="<?php echo $ps['spon_id']; ?>">
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-5 py-2.5 rounded-xl text-xs transition-all shadow-md flex items-center gap-1.5">
+                                <span>✓</span> تایید و فعال‌سازی بورسیه
+                            </button>
+                        </form>
+                        <form method="POST" action="" onsubmit="return confirm('آیا از رد این درخواست اطمینان دارید؟');">
+                            <input type="hidden" name="action" value="reject_sponsorship">
+                            <input type="hidden" name="sponsorship_id" value="<?php echo $ps['spon_id']; ?>">
+                            <button type="submit" class="bg-gray-100 hover:bg-rose-50 text-gray-600 hover:text-rose-600 font-bold px-4 py-2.5 rounded-xl text-xs transition-all border border-gray-200">
+                                رد درخواست
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </section>
+        <?php endif; ?>
 
         <!-- 1. Vetting Queue Section -->
         <section id="vetting-section" class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm mb-12">
@@ -297,21 +417,40 @@ function toFarsi($str) {
                             <th class="p-4">نام مستعار دانش‌پژوه</th>
                             <th class="p-4">تعداد سهام بورس</th>
                             <th class="p-4">تاریخ شروع بورس</th>
+                            <th class="p-4 text-center">دسترسی و نظارت مستقیم</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50 text-xs text-gray-700">
                         <?php if (empty($sponsorships)): ?>
                             <tr>
-                                <td colspan="5" class="p-8 text-center text-gray-400 font-bold">بورسیه‌ای ثبت نشده است.</td>
+                                <td colspan="6" class="p-8 text-center text-gray-400 font-bold">بورسیه‌ای ثبت نشده است.</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($sponsorships as $sp): ?>
                             <tr class="hover:bg-gray-50 transition-all">
-                                <td class="p-4 font-bold text-primary-900"><?php echo htmlspecialchars($sp['d_name'] . ' ' . $sp['d_surname']); ?></td>
-                                <td class="p-4"><?php echo htmlspecialchars($sp['st_name'] . ' ' . $sp['st_surname']); ?></td>
+                                <td class="p-4 font-bold text-primary-900">
+                                    <a href="../donor-detail.php?id=<?php echo $sp['donor_id']; ?>" class="hover:underline text-teal-800">
+                                        <?php echo htmlspecialchars($sp['d_name'] . ' ' . $sp['d_surname']); ?>
+                                    </a>
+                                </td>
+                                <td class="p-4">
+                                    <a href="../person-detail.php?id=<?php echo $sp['student_id']; ?>" class="hover:underline text-gray-800">
+                                        <?php echo htmlspecialchars($sp['st_name'] . ' ' . $sp['st_surname']); ?>
+                                    </a>
+                                </td>
                                 <td class="p-4 font-black text-teal-600"><?php echo htmlspecialchars($sp['alias_name'] ?: 'تعریف نشده'); ?></td>
                                 <td class="p-4 font-bold text-gray-800"><?php echo toFarsi($sp['shares_count']); ?> سهم</td>
                                 <td class="p-4 text-gray-400"><?php echo toFarsi($sp['start_date'] ?: '---'); ?></td>
+                                <td class="p-4 text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <a href="../donor-dashboard.php?donor_id=<?php echo $sp['donor_id']; ?>" target="_blank" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white rounded-xl text-[11px] font-bold transition-all shadow-sm flex items-center gap-1">
+                                            <span>💎</span> پورتال خیر
+                                        </a>
+                                        <a href="../student-dashboard.php?student_id=<?php echo $sp['student_id']; ?>" target="_blank" class="px-3 py-1.5 bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white rounded-xl text-[11px] font-bold transition-all shadow-sm flex items-center gap-1">
+                                            <span>🎒</span> پورتال دانش‌آموز
+                                        </a>
+                                    </div>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>

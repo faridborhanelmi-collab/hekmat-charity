@@ -1,45 +1,15 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$page_title = 'درباره ما | بنیاد نیکوکاری حکمت مشهد';
+$page_desc = 'آشنایی با تاریخچه، رسالت، اعضای هیئت امنا و دستاوردهای خیریه حکمت مشهد. ما متعهد به شناسایی و توانمندسازی نخبگان تحصیلی در مناطق محروم هستیم.';
+?>
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa-IR" dir="rtl">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>درباره ما | بنیاد نیکوکاری حکمت</title>
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"
-        type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Vazirmatn', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            900: '#0c4a6e',
-                        },
-                        accent: {
-                            500: '#f43f5e',
-                            600: '#e11d48',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <!-- iOS PWA/Homescreen Setup -->
-    <link rel="apple-touch-icon" href="logo.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="manifest" href="manifest.json">
+    <?php include 'includes/head.php'; ?>
 </head>
 
 <body class="bg-gray-50 font-sans text-gray-800">

@@ -1,28 +1,12 @@
+<?php
+$page_title = 'مسیر بورس حکمت | نقشه راه ۱۳ مرحله‌ای حمایت از نخبگان مستعد';
+$page_desc = 'نقشه راه گام‌به‌گام بورس تحصیلی بنیاد حکمت؛ از شناسایی در مدارس مناطق محروم تا قبولی در دانشگاه‌های برتر و ورود به بازار کار با شفافیت کامل.';
+?>
 <!DOCTYPE html>
-<html lang="fa" dir="rtl" class="scroll-smooth">
+<html lang="fa-IR" dir="rtl" class="scroll-smooth">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بورس حکمت: نقشه راه | بنیاد نیکوکاری حکمت</title>
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"
-        type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Vazirmatn', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: '#0e7490', // Cyan-700
-                        secondary: '#f59e0b', // Amber-500
-                    }
-                }
-            }
-        }
-    </script>
+    <?php include 'includes/head.php'; ?>
     <style>
         /* Custom Snake Path Connectors for Desktop */
         @media (min-width: 1024px) {
@@ -86,13 +70,31 @@
         }
     </style>
 
-    <!-- iOS PWA/Homescreen Setup -->
-    <link rel="apple-touch-icon" href="logo.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="manifest" href="manifest.json">
+    <!-- Schema.org FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "بورس تحصیلی حکمت چیست و چگونه اجرا می‌شود؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "بورس حکمت یک مسیر هوشمندانه ۱۳ مرحله‌ای است که دانش‌آموز مستعد را از شناسایی در مدارس مناطق محروم تا آزمون‌های روانشناختی، کلاس‌های کنکور و المپیاد، قبولی در دانشگاه و ورود به بازار کار همراهی و حمایت می‌کند."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "شفافیت مالی در بنیاد نیکوکاری حکمت چگونه است؟",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "تمامی کمک‌های مالی واریز شده توسط حامیان به صورت مستقیم و شفاف در پنل کاربری ثبت شده و صورت‌حساب دقیق هزینه‌کرد و پیشرفت تحصیلی دانش‌آموز به اطلاع حامی می‌رسد."
+          }
+        }
+      ]
+    }
+    </script>
 </head>
 
 <body class="bg-gray-50 font-sans text-gray-800">

@@ -65,42 +65,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 }
+$page_title = 'ورود به آکادمی استعدادهای حکمت | بنیاد نیکوکاری حکمت';
+$is_private_page = true;
 ?>
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa-IR" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ورود به آکادمی استعدادهای حکمت</title>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Vazirmatn', 'sans-serif'] },
-                    colors: {
-                        academy: {
-                            900: '#0f172a', // dark slate
-                            800: '#1e293b',
-                            600: '#475569',
-                            teal: '#14b8a6'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <!-- iOS PWA/Homescreen Setup -->
-    <link rel="apple-touch-icon" href="logo.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="manifest" href="manifest.json">
+    <?php include 'includes/head.php'; ?>
 </head>
-<body class="bg-academy-900 min-h-screen flex items-center justify-center relative overflow-hidden">
+<body class="bg-slate-900 min-h-screen flex items-center justify-center relative overflow-hidden font-sans">
 
     <!-- Background Elements -->
     <div class="absolute inset-0 z-0">
@@ -117,7 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <div class="w-8 h-8 bg-gradient-to-tr from-teal-400 to-cyan-500 rounded-full flex items-center justify-center font-bold text-white shadow-lg">🎓</div>
                     <span class="font-bold text-sm tracking-wide text-teal-300">سامانه آکادمی استعدادهای حکمت</span>
                 </div>
-                <h2 class="text-3xl font-black mb-2"><?php echo $step == 1 ? 'ورود دانش‌پژوهان' : 'تایید شماره همراه'; ?></h2>
+                <h1 class="text-3xl font-black mb-2"><?php echo $step == 1 ? 'ورود دانش‌پژوهان' : 'تایید شماره همراه'; ?></h1>
                 <p class="text-white/60 text-sm"><?php echo $step == 1 ? 'لطفاً کد ملی و شماره همراه خود را وارد کنید.' : 'کد ۴ رقمی پیامک شده را وارد کنید.'; ?></p>
             </div>
 

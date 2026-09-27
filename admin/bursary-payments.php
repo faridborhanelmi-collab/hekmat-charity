@@ -1,64 +1,63 @@
 <?php
 session_start();
 require_once '../includes/db.php';
+require_once '../includes/auth.php';
+require_once '../includes/ParsianBankService.php';
 
-// Access Control
-if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
-    header("Location: ../login.php");
-    exit();
-}
+// Access Control - Financial Only
+require_financial_access();
+
+$bankService = new ParsianBankService($pdo);
+$bankSettings = $bankService->getSettings();
 
 // ----------------------------------------------------
-// BANK CSV DOWNLOAD HANDLER (Must run before HTML)
+// BANK BATCH / CSV DOWNLOAD HANDLERS (Before HTML)
 // ----------------------------------------------------
-if (isset($_GET['action']) && $_GET['action'] === 'download_csv' && isset($_GET['id'])) {
+if (isset($_GET['action']) && isset($_GET['id'])) {
     $list_id = (int)$_GET['id'];
-    
-    // Fetch list info
     $stmt = $pdo->prepare("SELECT * FROM monthly_bursary_lists WHERE id = ?");
     $stmt->execute([$list_id]);
     $list = $stmt->fetch();
     
-    if ($list && ($list['status'] === 'signed' || $list['status'] === 'paid')) {
-        // Fetch items
+    if ($list) {
         $stmt = $pdo->prepare("SELECT * FROM monthly_bursary_items WHERE list_id = ? ORDER BY id ASC");
         $stmt->execute([$list_id]);
         $items = $stmt->fetchAll();
-        
-        $filename = "bursary_payment_" . $list['year'] . "_" . $list['month'] . ".csv";
-        
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        
-        // Output UTF-8 BOM for Excel compatibility
-        echo "\xEF\xBB\xBF";
-        
-        $output = fopen('php://output', 'w');
-        
-        // Headers
-        fputcsv($output, ['ردیف', 'نام و نام خانوادگی', 'شماره حساب', 'مبلغ پایه (ریال)', 'قسط کامپیوتر (ریال)', 'قسط وام (ریال)', 'سایر کسورات (ریال)', 'مبلغ خالص پرداختی (ریال)', 'شرح پرداخت']);
-        
-        $idx = 1;
-        foreach ($items as $item) {
-            $desc = "بورسیه " . $list['month'] . " " . $list['year'];
-            if (!empty($item['deductions_desc'])) {
-                $desc .= " - کسورات: " . $item['deductions_desc'];
-            }
-            fputcsv($output, [
-                $idx++,
-                $item['student_name'],
-                $item['account_number'],
-                $item['base_amount'],
-                $item['computer_installment'],
-                $item['loan_installment'],
-                $item['other_deductions'],
-                $item['final_amount'],
-                $desc
-            ]);
+
+        // 1. Parsian Standard Batch File Download
+        if ($_GET['action'] === 'download_parsian_csv') {
+            $bankService->generateParsianStandardBatchFile($list, $items);
+            exit();
         }
-        
-        fclose($output);
-        exit();
+
+        // 2. Standard CSV Download
+        if ($_GET['action'] === 'download_csv' && ($list['status'] === 'signed' || $list['status'] === 'paid')) {
+            $filename = "bursary_payment_" . $list['year'] . "_" . $list['month'] . ".csv";
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            echo "\xEF\xBB\xBF";
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['ردیف', 'نام و نام خانوادگی', 'شماره حساب', 'مبلغ پایه (ریال)', 'قسط کامپیوتر (ریال)', 'قسط وام (ریال)', 'سایر کسورات (ریال)', 'مبلغ خالص پرداختی (ریال)', 'شرح پرداخت']);
+            $idx = 1;
+            foreach ($items as $item) {
+                if (isset($item['is_selected']) && $item['is_selected'] == 0) continue;
+                $desc = "بورسیه " . $list['month'] . " " . $list['year'];
+                if (!empty($item['deductions_desc'])) $desc .= " - کسورات: " . $item['deductions_desc'];
+                fputcsv($output, [
+                    $idx++,
+                    $item['student_name'],
+                    $item['account_number'],
+                    $item['base_amount'],
+                    $item['computer_installment'],
+                    $item['loan_installment'],
+                    $item['other_deductions'],
+                    $item['final_amount'],
+                    $desc
+                ]);
+            }
+            fclose($output);
+            exit();
+        }
     }
 }
 
@@ -69,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     header('Content-Type: application/json');
     $ajax_action = $_POST['ajax_action'];
     
+    // 1. Update item values inline
     if ($ajax_action === 'update_item') {
         $item_id = (int)$_POST['item_id'];
         $base = (int)$_POST['base_amount'];
@@ -88,12 +88,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         exit();
     }
     
+    // 2. Toggle row selection (تیک بغل هر ردیف)
+    if ($ajax_action === 'toggle_selection') {
+        $item_id = (int)$_POST['item_id'];
+        $is_selected = (int)$_POST['is_selected'];
+        try {
+            $stmt = $pdo->prepare("UPDATE monthly_bursary_items SET is_selected = ? WHERE id = ?");
+            $stmt->execute([$is_selected, $item_id]);
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit();
+    }
+
+    // 3. Toggle all selection
+    if ($ajax_action === 'toggle_all_selection') {
+        $list_id = (int)$_POST['list_id'];
+        $is_selected = (int)$_POST['is_selected'];
+        try {
+            $stmt = $pdo->prepare("UPDATE monthly_bursary_items SET is_selected = ? WHERE list_id = ?");
+            $stmt->execute([$is_selected, $list_id]);
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit();
+    }
+
+    // 4. Submit Batch directly to Parsian Bank API
+    if ($ajax_action === 'submit_to_parsian_bank') {
+        $list_id = (int)$_POST['list_id'];
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM monthly_bursary_items WHERE list_id = ? AND (is_selected = 1 OR is_selected IS NULL) ORDER BY id ASC");
+            $stmt->execute([$list_id]);
+            $selected_items = $stmt->fetchAll();
+
+            if (empty($selected_items)) {
+                echo json_encode(['success' => false, 'message' => 'هیچ ردیفی برای ارسال به بانک انتخاب نشده است.']);
+                exit();
+            }
+
+            // Call Parsian Service
+            $res = $bankService->submitBatchTransfer($list_id, $selected_items);
+            if ($res['success']) {
+                // Update list status to pending_signatures so it appears in board signers cartable
+                $stmt = $pdo->prepare("UPDATE monthly_bursary_lists SET status = 'pending_signatures' WHERE id = ?");
+                $stmt->execute([$list_id]);
+            }
+            echo json_encode($res);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'خطا در ارسال به بانک: ' . $e->getMessage()]);
+        }
+        exit();
+    }
+
+    // 5. Inquire batch status from Parsian Bank
+    if ($ajax_action === 'inquire_bank_status') {
+        $list_id = (int)$_POST['list_id'];
+        $batch_id = trim($_POST['batch_id'] ?? '');
+        $res = $bankService->checkBatchStatus($list_id, $batch_id);
+        echo json_encode($res);
+        exit();
+    }
+
+    // 6. Add student to list
     if ($ajax_action === 'add_student_to_list') {
         $list_id = (int)$_POST['list_id'];
         $student_id = (int)$_POST['student_id'];
         
         try {
-            // Check if already in list
             $chk = $pdo->prepare("SELECT id FROM monthly_bursary_items WHERE list_id = ? AND student_id = ?");
             $chk->execute([$list_id, $student_id]);
             if ($chk->fetch()) {
@@ -101,7 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 exit();
             }
             
-            // Get student default values
             $stmt = $pdo->prepare("SELECT name, surname, account_number, base_bursary, computer_installment, loan_installment, other_deductions, deductions_desc FROM students WHERE id = ?");
             $stmt->execute([$student_id]);
             $st = $stmt->fetch();
@@ -114,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 $final = $base - $comp - $loan - $other;
                 $fullname = $st['name'] . ' ' . $st['surname'];
                 
-                $ins = $pdo->prepare("INSERT INTO monthly_bursary_items (list_id, student_id, student_name, account_number, base_amount, computer_installment, loan_installment, other_deductions, deductions_desc, final_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $ins = $pdo->prepare("INSERT INTO monthly_bursary_items (list_id, student_id, student_name, account_number, base_amount, computer_installment, loan_installment, other_deductions, deductions_desc, final_amount, is_selected) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
                 $ins->execute([$list_id, $student_id, $fullname, $st['account_number'], $base, $comp, $loan, $other, $st['deductions_desc'], $final]);
                 
                 echo json_encode(['success' => true]);
@@ -127,11 +190,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         exit();
     }
     
+    // 7. Delete item
     if ($ajax_action === 'delete_item') {
         $item_id = (int)$_POST['item_id'];
         try {
             $stmt = $pdo->prepare("DELETE FROM monthly_bursary_items WHERE id = ?");
             $stmt->execute([$item_id]);
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit();
+    }
+
+    // 8. Sync all items from student profiles
+    if ($ajax_action === 'sync_from_profiles') {
+        $list_id = (int)$_POST['list_id'];
+        try {
+            $stmt = $pdo->prepare("SELECT id, student_id FROM monthly_bursary_items WHERE list_id = ?");
+            $stmt->execute([$list_id]);
+            $list_items = $stmt->fetchAll();
+
+            $stmt_st = $pdo->prepare("SELECT account_number, base_bursary, computer_installment, loan_installment, other_deductions, deductions_desc FROM students WHERE id = ?");
+            $stmt_upd = $pdo->prepare("UPDATE monthly_bursary_items SET account_number = ?, base_amount = ?, computer_installment = ?, loan_installment = ?, other_deductions = ?, deductions_desc = ?, final_amount = ? WHERE id = ?");
+
+            foreach ($list_items as $itm) {
+                $stmt_st->execute([$itm['student_id']]);
+                $st = $stmt_st->fetch();
+                if ($st) {
+                    $base = $st['base_bursary'] ?? 20000000;
+                    $comp = $st['computer_installment'] ?? 0;
+                    $loan = $st['loan_installment'] ?? 0;
+                    $other = $st['other_deductions'] ?? 0;
+                    $final = $base - $comp - $loan - $other;
+                    $stmt_upd->execute([$st['account_number'], $base, $comp, $loan, $other, $st['deductions_desc'], $final, $itm['id']]);
+                }
+            }
             echo json_encode(['success' => true]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -157,7 +251,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax_action'])) {
             $message = "لطفاً سال و ماه را مشخص کنید.";
             $message_type = "error";
         } else {
-            // Check duplicate list
             $stmt = $pdo->prepare("SELECT id FROM monthly_bursary_lists WHERE year = ? AND month = ?");
             $stmt->execute([$year, $month]);
             if ($stmt->fetch()) {
@@ -166,18 +259,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax_action'])) {
             } else {
                 try {
                     $pdo->beginTransaction();
-                    
-                    // 1. Create list record
                     $created_at = date('Y/m/d H:i:s');
                     $ins = $pdo->prepare("INSERT INTO monthly_bursary_lists (year, month, status, created_at) VALUES (?, ?, 'draft', ?)");
                     $ins->execute([$year, $month, $created_at]);
                     $list_id = $pdo->lastInsertId();
                     
-                    // 2. Fetch eligible students
-                    $students = $pdo->query("SELECT id, name, surname, account_number, base_bursary, computer_installment, loan_installment, other_deductions, deductions_desc FROM students WHERE status = 'active' AND bursary_eligible = 1")->fetchAll();
+                    // Fetch eligible students
+                    $students = $pdo->query("SELECT id, name, surname, account_number, base_bursary, computer_installment, loan_installment, other_deductions, deductions_desc FROM students WHERE status IN ('active', 'university') AND bursary_eligible = 1")->fetchAll();
                     
-                    // 3. Insert items
-                    $ins_item = $pdo->prepare("INSERT INTO monthly_bursary_items (list_id, student_id, student_name, account_number, base_amount, computer_installment, loan_installment, other_deductions, deductions_desc, final_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $ins_item = $pdo->prepare("INSERT INTO monthly_bursary_items (list_id, student_id, student_name, account_number, base_amount, computer_installment, loan_installment, other_deductions, deductions_desc, final_amount, is_selected) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
                     
                     foreach ($students as $st) {
                         $base = $st['base_bursary'] ?? 20000000;
@@ -193,8 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax_action'])) {
                     $pdo->commit();
                     $message = "لیست پرداخت بورسیه برای $month $year با موفقیت پیش‌نویس شد.";
                     $message_type = "success";
-                    
-                    $_GET['view_id'] = $list_id; // auto redirect view
+                    $_GET['view_id'] = $list_id;
                 } catch (Exception $e) {
                     $pdo->rollBack();
                     $message = "خطا در ایجاد لیست: " . $e->getMessage();
@@ -231,15 +320,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax_action'])) {
             $message_type = "success";
         }
     }
+
+    if ($action === 'delete_list') {
+        $list_id = (int)$_POST['list_id'];
+        try {
+            $pdo->beginTransaction();
+            $stmt_items = $pdo->prepare("DELETE FROM monthly_bursary_items WHERE list_id = ?");
+            $stmt_items->execute([$list_id]);
+            
+            $stmt_list = $pdo->prepare("DELETE FROM monthly_bursary_lists WHERE id = ?");
+            $stmt_list->execute([$list_id]);
+            $pdo->commit();
+            
+            $message = "پیش‌نویس لیست پرداخت با موفقیت حذف گردید.";
+            $message_type = "success";
+            $view_id = 0;
+            unset($_GET['view_id']);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $message = "خطا در حذف پیش‌نویس: " . $e->getMessage();
+            $message_type = "error";
+        }
+    }
 }
 
 // ----------------------------------------------------
 // FETCH PAGE DATA
 // ----------------------------------------------------
-// Fetch all lists
 $lists = $pdo->query("SELECT * FROM monthly_bursary_lists ORDER BY year DESC, month DESC")->fetchAll();
 
-// Active viewing list
 $active_list = null;
 $active_items = [];
 $view_id = (int)($_GET['view_id'] ?? ($_POST['list_id'] ?? 0));
@@ -256,13 +365,12 @@ if ($view_id > 0) {
     }
 }
 
-// Fetch all active students NOT in active list for adding option
 $available_students = [];
 if ($active_list && $active_list['status'] === 'draft') {
     $stmt = $pdo->prepare("
         SELECT id, name, surname, code 
         FROM students 
-        WHERE status = 'active' 
+        WHERE status IN ('active', 'university') 
           AND id NOT IN (SELECT student_id FROM monthly_bursary_items WHERE list_id = ?)
         ORDER BY name ASC
     ");
@@ -273,7 +381,7 @@ if ($active_list && $active_list['status'] === 'draft') {
 function toFarsi($str) {
     $farsi = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
     $latin = ['0','1','2','3','4','5','6','7','8','9'];
-    return str_replace($latin, $farsi, $str);
+    return str_replace($latin, $farsi, (string)$str);
 }
 ?>
 <!DOCTYPE html>
@@ -281,10 +389,17 @@ function toFarsi($str) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت پرداخت بورسیه ماهیانه | بنیاد حکمت</title>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <title>مدیریت پرداخت بورسیه و وب‌سرویس بانک پارسیان | بنیاد حکمت</title>
+<style>
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:100;font-display:swap;src:url('/assets/fonts/Vazirmatn-100.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:300;font-display:swap;src:url('/assets/fonts/Vazirmatn-300.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/Vazirmatn-400.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/fonts/Vazirmatn-500.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/Vazirmatn-700.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:900;font-display:swap;src:url('/assets/fonts/Vazirmatn-900.woff2') format('woff2')}
+</style>
+<link rel="stylesheet" href="/assets/tailwind.min.css">
+<script defer src="/assets/alpine.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -295,32 +410,44 @@ function toFarsi($str) {
             }
         }
     </script>
-
-    <!-- iOS PWA/Homescreen Setup -->
-    <link rel="apple-touch-icon" href="logo.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="manifest" href="manifest.json">
 </head>
-<body class="bg-gray-50 font-sans text-gray-800 antialiased" x-data="bursaryPage()">
+<body class="bg-gray-50 font-sans text-gray-800 antialiased min-h-screen pb-20" x-data="bursaryManager(<?php echo htmlspecialchars(json_encode(array_map(function($i) {
+    return [
+        'id' => (int)$i['id'],
+        'student_id' => (int)$i['student_id'],
+        'student_name' => $i['student_name'],
+        'account_number' => $i['account_number'] ?? '',
+        'base_amount' => (int)$i['base_amount'],
+        'computer_installment' => (int)$i['computer_installment'],
+        'loan_installment' => (int)$i['loan_installment'],
+        'other_deductions' => (int)$i['other_deductions'],
+        'deductions_desc' => $i['deductions_desc'] ?? '',
+        'final_amount' => (int)$i['final_amount'],
+        'is_selected' => isset($i['is_selected']) ? (int)$i['is_selected'] : 1
+    ];
+}, $active_items))); ?>)">
 
-    <!-- Navigation -->
+    <!-- Navigation Header -->
     <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div class="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-4">
                 <a href="index.php" class="text-primary-900 font-bold text-sm flex items-center gap-2 group">
                     <span class="group-hover:translate-x-1 transition-transform">→</span>
-                    بازگشت به میز کار مدیریت
+                    میز کار مدیریت
                 </a>
                 <span class="text-gray-300">/</span>
-                <span class="font-bold text-gray-900">لیست پرداخت‌های ماهیانه</span>
+                <span class="font-bold text-gray-900">لیست پرداخت‌های ماهیانه و اتصال بانک پارسیان</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="parsian-settings.php" class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-black rounded-2xl border border-red-200 transition flex items-center gap-2">
+                    <span>🏦</span> تنظیمات وب‌سرویس بانک پارسیان
+                    <span class="w-2 h-2 rounded-full <?php echo ($bankSettings['is_sandbox'] ?? 1) ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'; ?>"></span>
+                </a>
             </div>
         </div>
     </nav>
 
-    <main class="container mx-auto px-6 py-12 max-w-7xl">
+    <main class="container mx-auto px-6 py-10 max-w-7xl">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
             <!-- Left Panel: Create & Lists History -->
@@ -334,7 +461,7 @@ function toFarsi($str) {
                         <input type="hidden" name="action" value="create_list">
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 block mb-1 px-1">سال شمسی</label>
-                            <input type="text" name="year" required placeholder="مثلاً 1405" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-teal-500">
+                            <input type="text" name="year" required value="1405" placeholder="مثلاً 1405" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-teal-500">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 block mb-1 px-1">ماه شمسی</label>
@@ -362,7 +489,7 @@ function toFarsi($str) {
                 <!-- History Lists -->
                 <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
                     <h3 class="text-sm font-black text-primary-900 mb-4 flex items-center gap-2">
-                        <span>📂</span> لیست‌های پرداخت شده یا جاری
+                        <span>📂</span> سوابق دوره‌های پرداخت
                     </h3>
                     <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
                         <?php if (empty($lists)): ?>
@@ -376,15 +503,24 @@ function toFarsi($str) {
                                 elseif ($ls['status'] === 'signed') $status_badge = '<span class="bg-emerald-100 text-emerald-700 text-[8px] font-bold px-2 py-0.5 rounded-full">امضا شده</span>';
                                 elseif ($ls['status'] === 'paid') $status_badge = '<span class="bg-teal-100 text-teal-700 text-[8px] font-bold px-2 py-0.5 rounded-full">بایگانی/پرداخت‌شده</span>';
                             ?>
-                            <a href="bursary-payments.php?view_id=<?php echo $ls['id']; ?>" class="block p-3 rounded-xl border border-gray-50 hover:bg-gray-50 flex justify-between items-center transition-colors <?php echo $view_id === (int)$ls['id'] ? 'bg-teal-50/50 border-teal-100' : 'bg-white'; ?>">
-                                <div class="text-right">
+                            <div class="block p-3 rounded-xl border border-gray-50 hover:bg-gray-50 flex justify-between items-center transition-colors <?php echo $view_id === (int)$ls['id'] ? 'bg-teal-50/50 border-teal-100' : 'bg-white'; ?>">
+                                <a href="bursary-payments.php?view_id=<?php echo $ls['id']; ?>" class="text-right flex-1">
                                     <h4 class="text-xs font-black text-primary-900"><?php echo $ls['month'] . ' ' . toFarsi($ls['year']); ?></h4>
                                     <span class="text-[8px] text-gray-400 font-bold block mt-1"><?php echo toFarsi(date('Y/m/d', strtotime($ls['created_at']))); ?></span>
-                                </div>
-                                <div>
+                                </a>
+                                <div class="flex items-center gap-2">
                                     <?php echo $status_badge; ?>
+                                    <?php if ($ls['status'] !== 'paid'): ?>
+                                    <form action="bursary-payments.php" method="POST" onsubmit="return confirm('آیا از حذف پیش‌نویس دوره <?php echo $ls['month'] . ' ' . $ls['year']; ?> اطمینان دارید؟ تمام ردیف‌های این دوره حذف خواهند شد.')" class="inline">
+                                        <input type="hidden" name="action" value="delete_list">
+                                        <input type="hidden" name="list_id" value="<?php echo $ls['id']; ?>">
+                                        <button type="submit" class="text-gray-300 hover:text-rose-600 p-1 transition" title="حذف این پیش‌نویس">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
                                 </div>
-                            </a>
+                            </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
@@ -394,45 +530,34 @@ function toFarsi($str) {
             <!-- Right Panel: View & Edit Active Payment Sheet -->
             <div class="lg:col-span-3 space-y-6">
                 <?php if ($message): ?>
-                <div class="<?php echo $message_type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'; ?> border px-6 py-4 rounded-2xl text-xs font-bold">
-                    <?php echo $message; ?>
+                <div class="<?php echo $message_type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'; ?> border px-6 py-4 rounded-2xl text-xs font-bold flex items-center gap-2">
+                    <span><?php echo $message_type === 'success' ? '✅' : '⚠️'; ?></span>
+                    <span><?php echo htmlspecialchars($message); ?></span>
                 </div>
                 <?php endif; ?>
 
                 <?php if (!$active_list): ?>
                     <div class="bg-white rounded-[3rem] p-12 text-center border border-gray-100 shadow-sm flex flex-col items-center justify-center min-h-[350px]">
                         <span class="text-5xl mb-6">📊</span>
-                        <h2 class="text-xl font-black text-primary-900 mb-2">مدیریت مالی بورسیه نخبگان</h2>
+                        <h2 class="text-xl font-black text-primary-900 mb-2">مدیریت مالی و اتصال بانکی بورسیه نخبگان</h2>
                         <p class="text-xs text-gray-400 font-bold max-w-md leading-relaxed">لطفاً یکی از لیست‌های قبلی را از منوی سمت راست انتخاب کنید یا یک لیست جدید برای ماه جاری ایجاد نمایید.</p>
                     </div>
-                <?php else: 
-                    $total_base = 0;
-                    $total_comp = 0;
-                    $total_loan = 0;
-                    $total_other = 0;
-                    $total_net = 0;
-                    foreach ($active_items as $item) {
-                        $total_base += $item['base_amount'];
-                        $total_comp += $item['computer_installment'];
-                        $total_loan += $item['loan_installment'];
-                        $total_other += $item['other_deductions'];
-                        $total_net += $item['final_amount'];
-                    }
-                ?>
+                <?php else: ?>
                     <div class="bg-white rounded-[3rem] p-8 shadow-xl border border-gray-100 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-l from-teal-500 to-indigo-500"></div>
+                        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-l from-red-500 via-teal-500 to-indigo-500"></div>
                         
-                        <!-- List Title & Status Badges -->
+                        <!-- List Title & Action Bar -->
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b pb-6 border-gray-50">
                             <div>
-                                <h2 class="text-2xl font-black text-primary-900 mb-1 flex items-center gap-2">
-                                    <span>سند مالی بورسیه:</span>
+                                <h2 class="text-2xl font-black text-primary-900 mb-1 flex items-center gap-3">
+                                    <span>سند بورسیه:</span>
                                     <span class="text-teal-600"><?php echo $active_list['month'] . ' ' . toFarsi($active_list['year']); ?></span>
+                                    <span class="text-xs font-bold px-3 py-1 bg-gray-100 text-gray-600 rounded-full">شناسه: #<?php echo $active_list['id']; ?></span>
                                 </h2>
                                 <p class="text-[10px] text-gray-400 font-bold">تاریخ ایجاد: <?php echo toFarsi(date('Y/m/d H:i', strtotime($active_list['created_at']))); ?></p>
                             </div>
                             
-                            <div class="flex flex-wrap items-center gap-4">
+                            <div class="flex flex-wrap items-center gap-3">
                                 <!-- Status indicator -->
                                 <div class="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-2xl border">
                                     <span class="text-[10px] text-gray-400 font-bold">وضعیت:</span>
@@ -449,43 +574,68 @@ function toFarsi($str) {
                                     <?php endif; ?>
                                 </div>
                                 
-                                <!-- Action Buttons based on status -->
-                                <?php if ($active_list['status'] === 'draft'): ?>
-                                    <form action="bursary-payments.php?view_id=<?php echo $view_id; ?>" method="POST" onsubmit="return confirm('آیا از صحت لیست اطمینان دارید؟ با ارسال به مدیریت، دیگر امکان حذف/اضافه مددجو وجود ندارد.')">
-                                        <input type="hidden" name="action" value="submit_to_admin">
+                                <!-- Primary Action: Send to Parsian API -->
+                                <button type="button" @click="confirmAndSubmitParsian(<?php echo $view_id; ?>)" :disabled="submittingToBank || selectedCount === 0" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-2xl shadow-xl transition-all flex items-center gap-2 disabled:opacity-50 transform hover:-translate-y-0.5">
+                                    <span x-show="!submittingToBank">🚀 ارسال بچ به وب‌سرویس بانک پارسیان</span>
+                                    <span x-show="submittingToBank" class="animate-spin">⌛</span>
+                                    <span x-show="submittingToBank">در حال ارسال به بانک...</span>
+                                </button>
+
+                                <!-- Parsian Batch File Download -->
+                                <a href="bursary-payments.php?action=download_parsian_csv&id=<?php echo $view_id; ?>" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black rounded-2xl transition flex items-center gap-2" title="دانلود فرمت استاندارد بارگذاری در اینترنت‌بانک پارسیان">
+                                    <span>📥</span> فایل بچ پارسیان (CSV)
+                                </a>
+
+                                <!-- Delete Draft Button -->
+                                <?php if ($active_list['status'] !== 'paid'): ?>
+                                    <form action="bursary-payments.php" method="POST" onsubmit="return confirm('آیا از حذف کامل پیش‌نویس دوره <?php echo $active_list['month'] . ' ' . $active_list['year']; ?> اطمینان دارید؟ تمام ردیف‌های این دوره حذف خواهند شد.')" class="inline">
+                                        <input type="hidden" name="action" value="delete_list">
                                         <input type="hidden" name="list_id" value="<?php echo $view_id; ?>">
-                                        <button type="submit" class="px-6 py-3 bg-teal-600 hover:bg-primary-900 text-white text-xs font-black rounded-xl shadow-lg transition-colors">
-                                            🚀 ارسال به مدیریت
+                                        <button type="submit" class="px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-black rounded-2xl transition flex items-center gap-1.5 shadow-sm">
+                                            <span>🗑️</span> حذف این پیش‌نویس
                                         </button>
                                     </form>
-                                <?php elseif ($active_list['status'] === 'pending_admin'): ?>
-                                    <form action="bursary-payments.php?view_id=<?php echo $view_id; ?>" method="POST">
-                                        <input type="hidden" name="action" value="admin_approve">
+                                <?php endif; ?>
+
+                                <?php if ($active_list['status'] === 'signed'): ?>
+                                    <form action="bursary-payments.php?view_id=<?php echo $view_id; ?>" method="POST" onsubmit="return confirm('آیا از پرداخت نهایی و آرشیو سند اطمینان دارید؟')">
+                                        <input type="hidden" name="action" value="archive_list">
                                         <input type="hidden" name="list_id" value="<?php echo $view_id; ?>">
-                                        <button type="submit" class="px-6 py-3 bg-teal-600 hover:bg-primary-900 text-white text-xs font-black rounded-xl shadow-lg transition-colors">
-                                            ✓ تایید و ارسال جهت امضا
+                                        <button type="submit" class="px-5 py-3 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black rounded-2xl shadow-lg transition-colors">
+                                            📦 بایگانی نهایی
                                         </button>
                                     </form>
-                                <?php elseif ($active_list['status'] === 'signed'): ?>
-                                    <div class="flex gap-2">
-                                        <a href="bursary-payments.php?action=download_csv&id=<?php echo $view_id; ?>" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-lg transition-colors flex items-center gap-2">
-                                            📥 دانلود لیست پرداخت بانکی (CSV)
-                                        </a>
-                                        <form action="bursary-payments.php?view_id=<?php echo $view_id; ?>" method="POST" onsubmit="return confirm('آیا از پرداخت نهایی و آرشیو سند اطمینان دارید؟')">
-                                            <input type="hidden" name="action" value="archive_list">
-                                            <input type="hidden" name="list_id" value="<?php echo $view_id; ?>">
-                                            <button type="submit" class="px-6 py-3 bg-teal-600 hover:bg-primary-900 text-white text-xs font-black rounded-xl shadow-lg transition-colors">
-                                                📦 بایگانی و اعلام پرداخت
-                                            </button>
-                                        </form>
-                                    </div>
-                                <?php elseif ($active_list['status'] === 'paid'): ?>
-                                    <a href="bursary-payments.php?action=download_csv&id=<?php echo $view_id; ?>" class="px-6 py-3 bg-teal-600 hover:bg-primary-900 text-white text-xs font-black rounded-xl shadow-lg transition-colors">
-                                        📥 دانلود مجدد لیست بانکی
-                                    </a>
                                 <?php endif; ?>
                             </div>
                         </div>
+
+                        <!-- Parsian Bank Batch Info Box (if submitted) -->
+                        <?php if (!empty($active_list['bank_batch_id'])): ?>
+                        <div class="bg-red-50/60 border border-red-200 p-5 rounded-3xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-red-600 text-white rounded-2xl flex items-center justify-center text-lg font-black shadow-md">
+                                    🏦
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-black text-red-950 flex items-center gap-2">
+                                        بچ انتقال وجه در سامانه بانک پارسیان ثبت شد
+                                        <span class="text-[9px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-mono">
+                                            <?php echo htmlspecialchars($active_list['bank_batch_id']); ?>
+                                        </span>
+                                    </h4>
+                                    <p class="text-[10px] text-red-700/80 mt-0.5">
+                                        کد رهگیری: <span class="font-mono font-bold"><?php echo htmlspecialchars($active_list['bank_tracking_code'] ?? '-'); ?></span>
+                                        | تاریخ ارسال: <?php echo toFarsi(date('Y/m/d H:i', strtotime($active_list['bank_submitted_at'] ?? 'now'))); ?>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="inquireBankStatus(<?php echo $view_id; ?>, '<?php echo htmlspecialchars($active_list['bank_batch_id']); ?>')" class="px-4 py-2 bg-white text-red-800 hover:bg-red-100 border border-red-200 text-xs font-bold rounded-xl transition shadow-sm flex items-center gap-1.5">
+                                    <span>🔄</span> استعلام وضعیت از بانک
+                                </button>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                         
                         <!-- Board Signatures Tracking -->
                         <?php if ($active_list['status'] === 'pending_signatures' || $active_list['status'] === 'signed' || $active_list['status'] === 'paid'): ?>
@@ -496,7 +646,7 @@ function toFarsi($str) {
                                     <span class="text-2xl">✒️</span>
                                     <div>
                                         <h4 class="text-xs font-black text-gray-700">امضای آقای بهنام بهرمن</h4>
-                                        <span class="text-[8px] text-gray-400 font-bold block mt-0.5">عضو هیئت مدیره</span>
+                                        <span class="text-[8px] text-gray-400 font-bold block mt-0.5">صاحب امضای مجاز</span>
                                     </div>
                                 </div>
                                 <div>
@@ -506,7 +656,7 @@ function toFarsi($str) {
                                         </span>
                                     <?php else: ?>
                                         <span class="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 animate-pulse">
-                                            <span>⌛</span> در انتظار امضا
+                                            <span>⌛</span> در انتظار امضا در اینترنت‌بانک
                                         </span>
                                     <?php endif; ?>
                                 </div>
@@ -517,7 +667,7 @@ function toFarsi($str) {
                                     <span class="text-2xl">✒️</span>
                                     <div>
                                         <h4 class="text-xs font-black text-gray-700">امضای آقای مهدی صنوبری</h4>
-                                        <span class="text-[8px] text-gray-400 font-bold block mt-0.5">عضو هیئت مدیره</span>
+                                        <span class="text-[8px] text-gray-400 font-bold block mt-0.5">صاحب امضای مجاز</span>
                                     </div>
                                 </div>
                                 <div>
@@ -527,7 +677,7 @@ function toFarsi($str) {
                                         </span>
                                     <?php else: ?>
                                         <span class="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-full flex items-center gap-1.5 animate-pulse">
-                                            <span>⌛</span> در انتظار امضا
+                                            <span>⌛</span> در انتظار امضا در اینترنت‌بانک
                                         </span>
                                     <?php endif; ?>
                                 </div>
@@ -535,186 +685,195 @@ function toFarsi($str) {
                         </div>
                         <?php endif; ?>
                         
-                        <!-- List Summary Stats Cards -->
+                        <!-- List Dynamic Summary Stats Cards (Driven by Selected Items) -->
                         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                            <div class="bg-gray-50/50 p-4 rounded-2xl text-center border">
-                                <div class="text-[9px] text-gray-400 font-bold uppercase mb-1">تعداد ردیف‌ها</div>
-                                <div class="text-sm font-black text-primary-900"><?php echo toFarsi(count($active_items)); ?> دانش‌آموز</div>
+                            <div class="bg-gray-50/70 p-4 rounded-2xl text-center border border-gray-100">
+                                <div class="text-[9px] text-gray-400 font-bold uppercase mb-1">واریزی‌های انتخاب‌شده</div>
+                                <div class="text-sm font-black text-primary-900">
+                                    <span x-text="selectedCount"></span> از <span x-text="items.length"></span> نفر
+                                </div>
                             </div>
-                            <div class="bg-gray-50/50 p-4 rounded-2xl text-center border">
-                                <div class="text-[9px] text-gray-400 font-bold uppercase mb-1">مبلغ کل پایه</div>
-                                <div class="text-sm font-black text-primary-900"><?php echo toFarsi(number_format($total_base)); ?> <span class="text-[8px] font-bold text-gray-400">ریال</span></div>
+                            <div class="bg-gray-50/70 p-4 rounded-2xl text-center border border-gray-100">
+                                <div class="text-[9px] text-gray-400 font-bold uppercase mb-1">مبلغ کل پایه انتخاب‌شده</div>
+                                <div class="text-sm font-black text-primary-900">
+                                    <span x-text="totalSelectedBase.toLocaleString()"></span> <span class="text-[8px] font-bold text-gray-400">ریال</span>
+                                </div>
                             </div>
-                            <div class="bg-gray-50/50 p-4 rounded-2xl text-center border">
+                            <div class="bg-gray-50/70 p-4 rounded-2xl text-center border border-gray-100">
                                 <div class="text-[9px] text-gray-400 font-bold uppercase mb-1">کل اقساط کسرشده</div>
-                                <div class="text-sm font-black text-rose-600"><?php echo toFarsi(number_format($total_comp + $total_loan)); ?> <span class="text-[8px] font-bold text-gray-400">ریال</span></div>
+                                <div class="text-sm font-black text-rose-600">
+                                    <span x-text="totalSelectedDeductions.toLocaleString()"></span> <span class="text-[8px] font-bold text-gray-400">ریال</span>
+                                </div>
                             </div>
-                            <div class="bg-gray-50/50 p-4 rounded-2xl text-center border">
-                                <div class="text-[9px] text-gray-400 font-bold uppercase mb-1">سایر کسورات</div>
-                                <div class="text-sm font-black text-rose-600"><?php echo toFarsi(number_format($total_other)); ?> <span class="text-[8px] font-bold text-gray-400">ریال</span></div>
+                            <div class="bg-gray-50/70 p-4 rounded-2xl text-center border border-gray-100">
+                                <div class="text-[9px] text-gray-400 font-bold uppercase mb-1">معادل به تومان</div>
+                                <div class="text-sm font-black text-indigo-600">
+                                    <span x-text="Math.round(totalSelectedNet / 10).toLocaleString()"></span> <span class="text-[8px] font-bold text-indigo-400">تومان</span>
+                                </div>
                             </div>
-                            <div class="bg-teal-50/40 p-4 rounded-2xl text-center border border-teal-100 col-span-2 md:col-span-1">
-                                <div class="text-[9px] text-teal-600 font-black uppercase mb-1">خالص کل پرداختی</div>
-                                <div class="text-sm font-black text-teal-700"><?php echo toFarsi(number_format($total_net)); ?> <span class="text-[8px] font-bold text-teal-500">ریال</span></div>
+                            <div class="bg-teal-50/70 p-4 rounded-2xl text-center border border-teal-200 col-span-2 md:col-span-1 shadow-sm">
+                                <div class="text-[9px] text-teal-600 font-black uppercase mb-1">خالص ارسالی به بانک</div>
+                                <div class="text-sm font-black text-teal-700">
+                                    <span x-text="totalSelectedNet.toLocaleString()"></span> <span class="text-[8px] font-bold text-teal-500">ریال</span>
+                                </div>
                             </div>
                         </div>
                         
-                        <!-- Add Student Widget (Draft only) -->
-                        <?php if ($active_list['status'] === 'draft' && !empty($available_students)): ?>
-                        <div class="flex items-center gap-4 bg-teal-50/40 p-4 rounded-2xl border border-teal-100/50 mb-8" x-data="{ addingStudentId: '' }">
-                            <span class="text-teal-600 text-xs font-black">➕ افزودن موردی دانش‌آموز به لیست این ماه:</span>
-                            <select x-model="addingStudentId" class="bg-white border rounded-xl px-4 py-2 text-xs font-bold cursor-pointer text-gray-700">
-                                <option value="">انتخاب دانش‌آموز...</option>
-                                <?php foreach ($available_students as $as): ?>
-                                <option value="<?php echo $as['id']; ?>"><?php echo $as['name'] . ' ' . $as['surname'] . ' (#' . $as['code'] . ')'; ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <button @click="addStudentToList(<?php echo $view_id; ?>, addingStudentId)" :disabled="!addingStudentId" class="px-6 py-2 bg-teal-600 hover:bg-primary-900 text-white text-[10px] font-black rounded-xl disabled:opacity-30 transition-colors">
-                                افزودن به لیست
-                            </button>
+                        <!-- Draft Action Toolbar (Add Student & Sync from Profiles) -->
+                        <?php if ($active_list['status'] === 'draft'): ?>
+                        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-teal-50/40 p-4 rounded-2xl border border-teal-100/50 mb-8" x-data="{ addingStudentId: '' }">
+                            <?php if (!empty($available_students)): ?>
+                            <div class="flex flex-col sm:flex-row items-center gap-3 flex-1">
+                                <span class="text-teal-800 text-xs font-black whitespace-nowrap">➕ افزودن دانش‌آموز به لیست:</span>
+                                <select x-model="addingStudentId" class="bg-white border rounded-xl px-4 py-2 text-xs font-bold cursor-pointer text-gray-700 w-full sm:w-auto flex-1">
+                                    <option value="">انتخاب از بین سایر مددجویان فعال...</option>
+                                    <?php foreach ($available_students as $as): ?>
+                                    <option value="<?php echo $as['id']; ?>"><?php echo $as['name'] . ' ' . $as['surname'] . ' (#' . $as['code'] . ')'; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button @click="addStudentToList(<?php echo $view_id; ?>, addingStudentId)" :disabled="!addingStudentId" class="px-5 py-2 bg-teal-600 hover:bg-primary-900 text-white text-xs font-black rounded-xl disabled:opacity-30 transition-colors shadow whitespace-nowrap">
+                                    افزودن
+                                </button>
+                            </div>
+                            <?php else: ?>
+                            <div class="text-xs text-gray-500 font-bold">
+                                تمامی دانش‌آموزان مشمول در این لیست درج شده‌اند.
+                            </div>
+                            <?php endif; ?>
+
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="syncFromProfiles(<?php echo $view_id; ?>)" :disabled="syncing" class="px-4 py-2 bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-black rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                                    <span x-show="!syncing">🔄 بازخوانی ارقام از پرونده‌ها</span>
+                                    <span x-show="syncing" class="animate-spin">⌛</span>
+                                    <span x-show="syncing">در حال بروزرسانی...</span>
+                                </button>
+                            </div>
                         </div>
                         <?php endif; ?>
 
                         <!-- Items Table -->
                         <div class="overflow-x-auto">
-                            <table class="w-full text-right">
+                            <table class="w-full text-right border-collapse">
                                 <thead>
-                                    <tr class="text-[9px] text-gray-400 uppercase border-b font-bold">
-                                        <th class="pb-4">نام دانش‌آموز</th>
-                                        <th class="pb-4">شماره حساب</th>
-                                        <th class="pb-4">بورسیه پایه (ریال)</th>
-                                        <th class="pb-4">قسط کامپیوتر (ریال)</th>
-                                        <th class="pb-4">قسط وام (ریال)</th>
-                                        <th class="pb-4">سایر کسورات (ریال)</th>
-                                        <th class="pb-4">بابت سایر کسورات</th>
-                                        <th class="pb-4">مبلغ خالص (ریال)</th>
-                                        <?php if ($active_list['status'] === 'draft'): ?>
-                                            <th class="pb-4 text-center">عملیات</th>
-                                        <?php endif; ?>
+                                    <tr class="text-[10px] text-gray-500 uppercase border-b border-gray-200 font-black bg-gray-50/50">
+                                        <th class="py-3 px-3 text-center w-12">
+                                            <input type="checkbox" :checked="isAllSelected" @change="toggleAllSelection(<?php echo $view_id; ?>, $event.target.checked)" class="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer">
+                                        </th>
+                                        <th class="py-3 px-3">نام دانش‌آموز (دوبار کلیک: پرونده)</th>
+                                        <th class="py-3 px-3">شماره حساب / شبا</th>
+                                        <th class="py-3 px-3">بورسیه پایه (ریال)</th>
+                                        <th class="py-3 px-3">قسط کامپیوتر</th>
+                                        <th class="py-3 px-3">قسط وام</th>
+                                        <th class="py-3 px-3">سایر کسورات</th>
+                                        <th class="py-3 px-3">بابت کسورات</th>
+                                        <th class="py-3 px-3">خالص پرداختی (ریال)</th>
+                                        <th class="py-3 px-3 text-center">عملیات</th>
                                     </tr>
                                 </thead>
-                                <tbody class="text-xs text-gray-700">
-                                    <?php foreach ($active_items as $itm): ?>
-                                    <tr class="border-b last:border-b-0" id="row-<?php echo $itm['id']; ?>"
-                                        x-data="{
-                                            isEditing: false,
-                                            baseAmt: <?php echo $itm['base_amount']; ?>,
-                                            compInst: <?php echo $itm['computer_installment']; ?>,
-                                            loanInst: <?php echo $itm['loan_installment']; ?>,
-                                            otherDeduct: <?php echo $itm['other_deductions']; ?>,
-                                            deductDesc: '<?php echo htmlspecialchars($itm['deductions_desc'] ?? ''); ?>',
-                                            netAmt: <?php echo $itm['final_amount']; ?>,
-                                            saving: false,
-                                            
-                                            calcNet() {
-                                                this.netAmt = this.baseAmt - this.compInst - this.loanInst - this.otherDeduct;
-                                            },
-                                            async saveItem() {
-                                                this.saving = true;
-                                                const formData = new FormData();
-                                                formData.append('ajax_action', 'update_item');
-                                                formData.append('item_id', <?php echo $itm['id']; ?>);
-                                                formData.append('base_amount', this.baseAmt);
-                                                formData.append('computer_installment', this.compInst);
-                                                formData.append('loan_installment', this.loanInst);
-                                                formData.append('other_deductions', this.otherDeduct);
-                                                formData.append('deductions_desc', this.deductDesc);
-                                                
-                                                try {
-                                                    const res = await fetch('bursary-payments.php', { method: 'POST', body: formData });
-                                                    const data = await res.json();
-                                                    if (data.success) {
-                                                        this.netAmt = data.final_amount;
-                                                        this.isEditing = false;
-                                                    } else {
-                                                        alert('خطا در ذخیره‌سازی: ' + data.message);
-                                                    }
-                                                } catch (e) {
-                                                    alert('خطا در ارتباط با سرور.');
-                                                } finally {
-                                                    this.saving = false;
-                                                }
-                                            }
-                                        }">
-                                        <td class="py-4 font-bold text-gray-900"><?php echo $itm['student_name']; ?></td>
-                                        <td class="py-4 font-mono text-[10px] text-gray-500"><?php echo $itm['account_number'] ?: '<span class="text-rose-400 font-bold text-[8px]">بدون حساب</span>'; ?></td>
-                                        
-                                        <!-- Editable Columns -->
-                                        <td class="py-4">
-                                            <template x-if="isEditing">
-                                                <input type="number" x-model.number="baseAmt" @input="calcNet()" class="w-24 bg-gray-50 border rounded-lg px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-teal-500">
-                                            </template>
-                                            <template x-if="!isEditing">
-                                                <span x-text="baseAmt.toLocaleString()"></span>
-                                            </template>
-                                        </td>
-                                        
-                                        <td class="py-4">
-                                            <template x-if="isEditing">
-                                                <input type="number" x-model.number="compInst" @input="calcNet()" class="w-20 bg-gray-50 border rounded-lg px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-teal-500 text-rose-600">
-                                            </template>
-                                            <template x-if="!isEditing">
-                                                <span :class="compInst > 0 ? 'text-rose-600 font-bold' : 'text-gray-400'" x-text="compInst > 0 ? compInst.toLocaleString() : '۰'"></span>
-                                            </template>
-                                        </td>
-                                        
-                                        <td class="py-4">
-                                            <template x-if="isEditing">
-                                                <input type="number" x-model.number="loanInst" @input="calcNet()" class="w-20 bg-gray-50 border rounded-lg px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-teal-500 text-rose-600">
-                                            </template>
-                                            <template x-if="!isEditing">
-                                                <span :class="loanInst > 0 ? 'text-rose-600 font-bold' : 'text-gray-400'" x-text="loanInst > 0 ? loanInst.toLocaleString() : '۰'"></span>
-                                            </template>
-                                        </td>
-                                        
-                                        <td class="py-4">
-                                            <template x-if="isEditing">
-                                                <input type="number" x-model.number="otherDeduct" @input="calcNet()" class="w-20 bg-gray-50 border rounded-lg px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-teal-500 text-rose-600">
-                                            </template>
-                                            <template x-if="!isEditing">
-                                                <span :class="otherDeduct > 0 ? 'text-rose-600 font-bold' : 'text-gray-400'" x-text="otherDeduct > 0 ? otherDeduct.toLocaleString() : '۰'"></span>
-                                            </template>
-                                        </td>
-                                        
-                                        <td class="py-4 text-gray-500 text-[10px]">
-                                            <template x-if="isEditing">
-                                                <input type="text" x-model="deductDesc" class="w-32 bg-gray-50 border rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500">
-                                            </template>
-                                            <template x-if="!isEditing">
-                                                <span x-text="deductDesc || '-'"></span>
-                                            </template>
-                                        </td>
-                                        
-                                        <!-- Final Amount (calculated) -->
-                                        <td class="py-4 text-emerald-600 font-black text-sm" x-text="netAmt.toLocaleString()" dir="ltr"></td>
-                                        
-                                        <!-- Actions -->
-                                        <?php if ($active_list['status'] === 'draft'): ?>
-                                        <td class="py-4 text-center">
-                                            <div class="flex items-center justify-center gap-2">
-                                                <template x-if="!isEditing">
-                                                    <button @click="isEditing = true" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px]">
-                                                        ⚙️ ویرایش
+                                <tbody class="text-xs text-gray-700 divide-y divide-gray-100">
+                                    <template x-for="(itm, index) in items" :key="itm.id">
+                                        <tr class="hover:bg-gray-50/80 transition-colors" :class="itm.is_selected ? 'bg-white' : 'bg-gray-100/60 opacity-60'">
+                                            <!-- Checkbox -->
+                                            <td class="py-3.5 px-3 text-center">
+                                                <input type="checkbox" :checked="itm.is_selected" @change="toggleRowSelection(itm, $event.target.checked)" class="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer">
+                                            </td>
+
+                                            <!-- Student Name with Double-Click and Direct Link -->
+                                            <td class="py-3.5 px-3 font-bold text-gray-900 select-none group/name cursor-pointer" 
+                                                @dblclick="openStudentProfile(itm.student_id)" 
+                                                title="دوبار کلیک برای باز شدن پرونده شخصی در تب جدید">
+                                                <div class="flex items-center gap-2">
+                                                    <span x-text="itm.student_name" class="hover:text-teal-600 transition-colors"></span>
+                                                    <a :href="'../person-detail.php?id=' + itm.student_id" target="_blank" class="text-[9px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded-lg border border-teal-200/60 transition flex items-center gap-1 opacity-70 group-hover/name:opacity-100" title="مشاهده و ویرایش پروفایل">
+                                                        <span>پروفایل</span>
+                                                        <span>↗️</span>
+                                                    </a>
+                                                </div>
+                                            </td>
+
+                                            <!-- Account Number -->
+                                            <td class="py-3.5 px-3 font-mono text-[11px] text-gray-600">
+                                                <span x-text="itm.account_number || 'ثبت نشده'" :class="!itm.account_number ? 'text-rose-500 font-bold text-[9px]' : ''"></span>
+                                            </td>
+
+                                            <!-- Base Amount -->
+                                            <td class="py-3.5 px-3">
+                                                <template x-if="itm.isEditing">
+                                                    <input type="number" x-model.number="itm.base_amount" @input="calcRowNet(itm)" class="w-24 bg-gray-50 border rounded-lg px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-teal-500">
+                                                </template>
+                                                <template x-if="!itm.isEditing">
+                                                    <span x-text="itm.base_amount.toLocaleString()"></span>
+                                                </template>
+                                            </td>
+
+                                            <!-- Computer Installment -->
+                                            <td class="py-3.5 px-3">
+                                                <template x-if="itm.isEditing">
+                                                    <input type="number" x-model.number="itm.computer_installment" @input="calcRowNet(itm)" class="w-20 bg-gray-50 border rounded-lg px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-teal-500 text-rose-600">
+                                                </template>
+                                                <template x-if="!itm.isEditing">
+                                                    <span :class="itm.computer_installment > 0 ? 'text-rose-600 font-bold' : 'text-gray-400'" x-text="itm.computer_installment > 0 ? itm.computer_installment.toLocaleString() : '۰'"></span>
+                                                </template>
+                                            </td>
+
+                                            <!-- Loan Installment -->
+                                            <td class="py-3.5 px-3">
+                                                <template x-if="itm.isEditing">
+                                                    <input type="number" x-model.number="itm.loan_installment" @input="calcRowNet(itm)" class="w-20 bg-gray-50 border rounded-lg px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-teal-500 text-rose-600">
+                                                </template>
+                                                <template x-if="!itm.isEditing">
+                                                    <span :class="itm.loan_installment > 0 ? 'text-rose-600 font-bold' : 'text-gray-400'" x-text="itm.loan_installment > 0 ? itm.loan_installment.toLocaleString() : '۰'"></span>
+                                                </template>
+                                            </td>
+
+                                            <!-- Other Deductions -->
+                                            <td class="py-3.5 px-3">
+                                                <template x-if="itm.isEditing">
+                                                    <input type="number" x-model.number="itm.other_deductions" @input="calcRowNet(itm)" class="w-20 bg-gray-50 border rounded-lg px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-teal-500 text-rose-600">
+                                                </template>
+                                                <template x-if="!itm.isEditing">
+                                                    <span :class="itm.other_deductions > 0 ? 'text-rose-600 font-bold' : 'text-gray-400'" x-text="itm.other_deductions > 0 ? itm.other_deductions.toLocaleString() : '۰'"></span>
+                                                </template>
+                                            </td>
+
+                                            <!-- Deductions Desc -->
+                                            <td class="py-3.5 px-3 text-gray-500 text-[10px]">
+                                                <template x-if="itm.isEditing">
+                                                    <input type="text" x-model="itm.deductions_desc" class="w-32 bg-gray-50 border rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500">
+                                                </template>
+                                                <template x-if="!itm.isEditing">
+                                                    <span x-text="itm.deductions_desc || '-'"></span>
+                                                </template>
+                                            </td>
+
+                                            <!-- Final Amount -->
+                                            <td class="py-3.5 px-3 text-emerald-600 font-black text-sm font-mono" x-text="itm.final_amount.toLocaleString()" dir="ltr"></td>
+
+                                            <!-- Row Actions -->
+                                            <td class="py-3.5 px-3 text-center">
+                                                <div class="flex items-center justify-center gap-1.5">
+                                                    <template x-if="!itm.isEditing">
+                                                        <button @click="itm.isEditing = true" class="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px]">
+                                                            ✏️ ویرایش
+                                                        </button>
+                                                    </template>
+                                                    <template x-if="itm.isEditing">
+                                                        <div class="flex gap-1">
+                                                            <button @click="saveRowItem(itm)" :disabled="itm.saving" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px]">
+                                                                ✓ ذخیره
+                                                            </button>
+                                                            <button @click="itm.isEditing = false" class="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px]">
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    </template>
+                                                    <button @click="deleteItem(itm.id)" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg font-bold text-[10px]">
+                                                        🗑️
                                                     </button>
-                                                </template>
-                                                <template x-if="isEditing">
-                                                    <div class="flex gap-1">
-                                                        <button @click="saveItem()" :disabled="saving" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] disabled:opacity-50">
-                                                            ✓ ذخیره
-                                                        </button>
-                                                        <button @click="isEditing = false" class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px]">
-                                                            ✕ لغو
-                                                        </button>
-                                                    </div>
-                                                </template>
-                                                <button @click="deleteItem(<?php echo $itm['id']; ?>)" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg font-bold text-[10px]">
-                                                    🗑️ حذف
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <?php endif; ?>
-                                    </tr>
-                                    <?php endforeach; ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
                                 </tbody>
                             </table>
                         </div>
@@ -726,8 +885,139 @@ function toFarsi($str) {
     </main>
 
     <script>
-        function bursaryPage() {
+        function bursaryManager(initialItems) {
             return {
+                items: initialItems.map(i => ({ ...i, isEditing: false, saving: false })),
+                submittingToBank: false,
+                syncing: false,
+
+                get isAllSelected() {
+                    return this.items.length > 0 && this.items.every(i => i.is_selected);
+                },
+
+                get selectedCount() {
+                    return this.items.filter(i => i.is_selected).length;
+                },
+
+                get totalSelectedBase() {
+                    return this.items.filter(i => i.is_selected).reduce((acc, i) => acc + (i.base_amount || 0), 0);
+                },
+
+                get totalSelectedDeductions() {
+                    return this.items.filter(i => i.is_selected).reduce((acc, i) => acc + (i.computer_installment || 0) + (i.loan_installment || 0) + (i.other_deductions || 0), 0);
+                },
+
+                get totalSelectedNet() {
+                    return this.items.filter(i => i.is_selected).reduce((acc, i) => acc + (i.final_amount || 0), 0);
+                },
+
+                calcRowNet(itm) {
+                    itm.final_amount = (itm.base_amount || 0) - (itm.computer_installment || 0) - (itm.loan_installment || 0) - (itm.other_deductions || 0);
+                },
+
+                async toggleRowSelection(itm, checked) {
+                    itm.is_selected = checked ? 1 : 0;
+                    const formData = new FormData();
+                    formData.append('ajax_action', 'toggle_selection');
+                    formData.append('item_id', itm.id);
+                    formData.append('is_selected', itm.is_selected);
+                    try {
+                        await fetch('bursary-payments.php', { method: 'POST', body: formData });
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                async toggleAllSelection(listId, checked) {
+                    const val = checked ? 1 : 0;
+                    this.items.forEach(i => i.is_selected = val);
+                    const formData = new FormData();
+                    formData.append('ajax_action', 'toggle_all_selection');
+                    formData.append('list_id', listId);
+                    formData.append('is_selected', val);
+                    try {
+                        await fetch('bursary-payments.php', { method: 'POST', body: formData });
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                async saveRowItem(itm) {
+                    itm.saving = true;
+                    const formData = new FormData();
+                    formData.append('ajax_action', 'update_item');
+                    formData.append('item_id', itm.id);
+                    formData.append('base_amount', itm.base_amount);
+                    formData.append('computer_installment', itm.computer_installment);
+                    formData.append('loan_installment', itm.loan_installment);
+                    formData.append('other_deductions', itm.other_deductions);
+                    formData.append('deductions_desc', itm.deductions_desc || '');
+                    
+                    try {
+                        const res = await fetch('bursary-payments.php', { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (data.success) {
+                            itm.final_amount = data.final_amount;
+                            itm.isEditing = false;
+                        } else {
+                            alert('خطا در ذخیره‌سازی: ' + data.message);
+                        }
+                    } catch (e) {
+                        alert('خطا در برقراری ارتباط با سرور.');
+                    } finally {
+                        itm.saving = false;
+                    }
+                },
+
+                async confirmAndSubmitParsian(listId) {
+                    const count = this.selectedCount;
+                    const totalRials = this.totalSelectedNet.toLocaleString();
+                    const totalTomans = Math.round(this.totalSelectedNet / 10).toLocaleString();
+
+                    const promptMsg = `آیا از ارسال بچ واریز گروهی به وب‌سرویس بانک پارسیان اطمینان دارید؟\n\n- تعداد افراد انتخابی: ${count} نفر\n- مبلغ کل واریزی: ${totalRials} ریال (${totalTomans} تومان)\n\nپس از ارسال، دستور پرداخت در سامانه بانک پارسیان ثبت و جهت امضا به پورتال اعضای مجاز هیئت مدیره ارسال خواهد شد.`;
+                    
+                    if (!confirm(promptMsg)) return;
+
+                    this.submittingToBank = true;
+                    const formData = new FormData();
+                    formData.append('ajax_action', 'submit_to_parsian_bank');
+                    formData.append('list_id', listId);
+
+                    try {
+                        const res = await fetch('bursary-payments.php', { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (data.success) {
+                            alert('✅ ' + data.message + '\n\nشناسه بچ: ' + data.batch_id + '\nکد پیگیری: ' + data.tracking_code);
+                            location.reload();
+                        } else {
+                            alert('❌ خطا در ارسال به بانک: ' + data.message);
+                        }
+                    } catch (e) {
+                        alert('خطا در ارتباط با سرور.');
+                    } finally {
+                        this.submittingToBank = false;
+                    }
+                },
+
+                async inquireBankStatus(listId, batchId) {
+                    const formData = new FormData();
+                    formData.append('ajax_action', 'inquire_bank_status');
+                    formData.append('list_id', listId);
+                    formData.append('batch_id', batchId);
+
+                    try {
+                        const res = await fetch('bursary-payments.php', { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (data.success) {
+                            alert('📡 آخرین وضعیت استعلام از وب‌سرویس بانک:\n\nشناسه بچ: ' + data.batch_id + '\nوضعیت: ' + data.status_fa);
+                        } else {
+                            alert('خطا در استعلام: ' + data.message);
+                        }
+                    } catch (e) {
+                        alert('خطا در ارتباط با سرور.');
+                    }
+                },
+
                 async addStudentToList(listId, studentId) {
                     if (!studentId) return;
                     const formData = new FormData();
@@ -758,27 +1048,44 @@ function toFarsi($str) {
                         const res = await fetch('bursary-payments.php', { method: 'POST', body: formData });
                         const data = await res.json();
                         if (data.success) {
-                            document.getElementById('row-' + itemId).remove();
-                            // Optional: reload to refresh aggregate sums on top card
-                            location.reload();
+                            this.items = this.items.filter(i => i.id !== itemId);
                         } else {
                             alert(data.message || 'خطا در حذف');
                         }
                     } catch (e) {
                         alert('خطا در ارتباط با سرور.');
                     }
+                },
+
+                openStudentProfile(studentId) {
+                    if (!studentId) return;
+                    window.open('../person-detail.php?id=' + studentId, '_blank');
+                },
+
+                async syncFromProfiles(listId) {
+                    if (!confirm('آیا مایلید مبالغ بورسیه و اقساط این لیست با آخرین اطلاعات ثبت‌شده در پرونده دانش‌آموزان همگام‌سازی شود؟')) return;
+                    this.syncing = true;
+                    const formData = new FormData();
+                    formData.append('ajax_action', 'sync_from_profiles');
+                    formData.append('list_id', listId);
+
+                    try {
+                        const res = await fetch('bursary-payments.php', { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (data.success) {
+                            alert('✅ تمامی ارقام، شماره حساب‌ها و اقساط با موفقیت از پرونده دانش‌آموزان بازخوانی و به‌روز شدند.');
+                            location.reload();
+                        } else {
+                            alert('خطا در همگام‌سازی: ' + data.message);
+                        }
+                    } catch (e) {
+                        alert('خطا در ارتباط با سرور.');
+                    } finally {
+                        this.syncing = false;
+                    }
                 }
             }
         }
     </script>
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js');
-    });
-  }
-</script>
-
 </body>
 </html>

@@ -9,7 +9,7 @@ $stmt = $pdo->query("
            sp.final_grade, sp.hermans_grade
     FROM students s
     LEFT JOIN student_psychology sp ON s.id = sp.student_id
-    WHERE s.status = 'active' AND s.bursary_eligible = 1
+    WHERE s.status IN ('active', 'university') AND s.bursary_eligible = 1
     ORDER BY is_sponsored ASC, s.id ASC
 ");
 $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -25,28 +25,14 @@ function getGenderFromName($name) {
     return 'پسر';
 }
 ?>
+<?php
+$page_title = 'پویش حکمت‌یار | حامی تحصیلی دانش‌آموزان نیازمند شوید';
+$page_desc = 'در پویش حکمت‌یار با پرداخت ماهیانه ۳ میلیون تومان، سرپرستی آموزشی یک دانش‌آموز نخبه و مستعد را بر عهده بگیرید و پیشرفت تحصیلی او را دنبال کنید.';
+?>
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa-IR" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پویش هر حکمتی، یک دانش‌آموز | بنیاد نیکوکاری حکمت</title>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Vazirmatn', 'sans-serif'] },
-                    colors: {
-                        primary: { 900: '#0c4a6e', 800: '#075985', 600: '#0284c7' },
-                        teal: { 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488' },
-                        gold: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
-                    }
-                }
-            }
-        }
-    </script>
+    <?php include 'includes/head.php'; ?>
     <style>
         .glass {
             background: rgba(255, 255, 255, 0.05);
@@ -72,13 +58,27 @@ function getGenderFromName($name) {
         .delay-3 { animation-delay: 0.6s; }
     </style>
 
-    <!-- iOS PWA/Homescreen Setup -->
-    <link rel="apple-touch-icon" href="logo.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="بنیاد حکمت">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="manifest" href="manifest.json">
+    <!-- Schema.org Campaign -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Campaign",
+      "name": "پویش هر حکمتی، یک دانش‌آموز (حکمت‌یار)",
+      "description": "پویش پذیرش هزینه‌های بورس تحصیلی و حمایت همه جانبه از دانش‌آموزان مستعد نیازمند در طول سال تحصیلی.",
+      "url": "https://hekmatfoundation.org/campaign.php",
+      "image": "https://hekmatfoundation.org/assets/images/campaign_hero.jpg",
+      "organizer": {
+        "@type": "NGO",
+        "name": "بنیاد نیکوکاری حکمت",
+        "url": "https://hekmatfoundation.org/"
+      },
+      "potentialAction": {
+        "@type": "DonateAction",
+        "name": "حمایت از دانش‌آموز مستعد",
+        "target": "https://hekmatfoundation.org/campaign.php#students-grid"
+      }
+    }
+    </script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans antialiased overflow-x-hidden selection:bg-teal-500 selection:text-white">
 
@@ -200,7 +200,7 @@ function getGenderFromName($name) {
             <div class="text-center max-w-3xl mx-auto mb-16">
                 <h2 class="text-3xl md:text-4xl font-black text-white mb-6">ساختار حکمت‌یار چگونه است؟</h2>
                 <p class="text-gray-300 text-lg leading-relaxed mb-4">
-                    با مبلغی بسیار کمتر از آنچه تصور می‌کنید (متوسط <strong class="text-teal-400">۲.۵ میلیون تومان</strong> در ماه برای هر نفر)، می‌توانید مسیر زندگی یک انسان را تغییر دهید.
+                    با مبلغی بسیار کمتر از آنچه تصور می‌کنید (متوسط <strong class="text-teal-400">۳ میلیون تومان</strong> در ماه برای هر نفر)، می‌توانید مسیر زندگی یک انسان را تغییر دهید.
                 </p>
                 <p class="text-gray-400 text-base">
                     شما می‌توانید با تقبل ضریبی از این مبلغ، یک یا چند فرزند مستعد را در خانواده خود پذیرا باشید و تأثیری شگرف در آینده آن‌ها و جامعه بگذارید.
@@ -214,7 +214,7 @@ function getGenderFromName($name) {
                     <div class="relative z-10">
                         <div class="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-2xl mb-6">1️⃣</div>
                         <h3 class="text-2xl font-black text-white mb-2">حامی ۱ دانش‌آموز</h3>
-                        <div class="text-3xl font-black text-teal-400 mb-6">۲.۵ <span class="text-lg font-normal text-gray-400">میلیون تومان / ماه</span></div>
+                        <div class="text-3xl font-black text-teal-400 mb-6">۳ <span class="text-lg font-normal text-gray-400">میلیون تومان / ماه</span></div>
                         <p class="text-gray-400 mb-8 text-sm leading-relaxed">
                             تأمین آرامش خاطر یک دانش‌آموز مستعد. با این تصمیم، دغدغه‌های مالی را از دوش او برمی‌دارید تا تنها به فردایی روشن بیندیشد.
                         </p>
@@ -231,7 +231,7 @@ function getGenderFromName($name) {
                     <div class="relative z-10">
                         <div class="w-14 h-14 bg-teal-500/20 text-teal-400 rounded-2xl flex items-center justify-center text-2xl mb-6">2️⃣</div>
                         <h3 class="text-2xl font-black text-white mb-2">حامی ۲ دانش‌آموز</h3>
-                        <div class="text-3xl font-black text-teal-400 mb-6">۵.۰ <span class="text-lg font-normal text-gray-400">میلیون تومان / ماه</span></div>
+                        <div class="text-3xl font-black text-teal-400 mb-6">۶.۰ <span class="text-lg font-normal text-gray-400">میلیون تومان / ماه</span></div>
                         <p class="text-gray-400 mb-8 text-sm leading-relaxed">
                             ایجاد تغییر بنیادین در مسیر زندگی دو آینده‌ساز. تأثیرگذاری مضاعف شما، امیدی است که در دل دو خانواده جوانه می‌زند.
                         </p>
@@ -247,7 +247,7 @@ function getGenderFromName($name) {
                     <div class="relative z-10">
                         <div class="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-2xl mb-6">4️⃣</div>
                         <h3 class="text-2xl font-black text-white mb-2">حامی ۴ دانش‌آموز</h3>
-                        <div class="text-3xl font-black text-gold-400 mb-6">۱۰ <span class="text-lg font-normal text-gray-400">میلیون تومان / ماه</span></div>
+                        <div class="text-3xl font-black text-gold-400 mb-6">۱۲ <span class="text-lg font-normal text-gray-400">میلیون تومان / ماه</span></div>
                         <p class="text-gray-400 mb-8 text-sm leading-relaxed">
                             پوشش کامل یک خانواده بزرگ از دانش‌آموزان حکمت. شما بانی شکل‌گیری نسلی از نخبگان خواهید بود.
                         </p>
@@ -259,7 +259,7 @@ function getGenderFromName($name) {
             </div>
             
             <div class="mt-12 text-center text-gray-400 text-sm">
-                * امکان حمایت با مبالغ دلخواه نیز وجود دارد. سیستم به طور خودکار به ازای هر ۲.۵ میلیون تومان، پروفایل یک دانش‌آموز را به شما اختصاص خواهد داد.
+                * امکان حمایت با مبالغ دلخواه نیز وجود دارد. سیستم به طور خودکار به ازای هر ۳ میلیون تومان، پروفایل یک دانش‌آموز را به شما اختصاص خواهد داد.
             </div>
         </div>
     </section>
@@ -297,7 +297,7 @@ function getGenderFromName($name) {
                                 <?php echo $avatar; ?>
                             </div>
                             <div>
-                                <h3 class="text-xl font-black text-white"><?php echo htmlspecialchars((string)($student['alias_name'] ?: 'حکمت‌جو')); ?></h3>
+                                <div class="text-xl font-black text-white"><?php echo htmlspecialchars((string)($student['alias_name'] ?: 'حکمت‌جو')); ?></div>
                                 <div class="text-teal-400 text-sm font-bold mt-1"><?php echo htmlspecialchars((string)$student['grade']); ?> • <?php echo $gender; ?></div>
                             </div>
                         </div>
@@ -378,9 +378,9 @@ function getGenderFromName($name) {
                     <div>
                         <select required class="w-full bg-gray-900/50 border border-white/10 text-gray-300 rounded-xl px-5 py-4 focus:outline-none focus:border-teal-500 transition-colors appearance-none">
                             <option value="" disabled selected>تعداد دانش‌آموزان مورد حمایت...</option>
-                            <option value="1">۱ دانش‌آموز (۲.۵ میلیون در ماه)</option>
-                            <option value="2">۲ دانش‌آموز (۵ میلیون در ماه)</option>
-                            <option value="4">۴ دانش‌آموز (۱۰ میلیون در ماه)</option>
+                            <option value="1">۱ دانش‌آموز (۳ میلیون در ماه)</option>
+                            <option value="2">۲ دانش‌آموز (۶ میلیون در ماه)</option>
+                            <option value="4">۴ دانش‌آموز (۱۲ میلیون در ماه)</option>
                             <option value="custom">مبلغ دلخواه (تماس بگیرید)</option>
                         </select>
                     </div>

@@ -57,7 +57,7 @@ rsync -avz -e "$SSH_CMD" \
     --exclude '*.xlsx' \
     "$DIR/" "$SERVER_USER@$SERVER_IP:$REMOTE_PATH/"
 
-echo "🔧 [3/3] بررسی سینتکس فایل‌ها و تنظیم مجوزهای دسترسی پایگاه داده..."
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "$SERVER_USER@$SERVER_IP" "php -l $REMOTE_PATH/donor-dashboard.php && php -l $REMOTE_PATH/login.php && sudo chown ubuntu:www-data $REMOTE_PATH && sudo chmod 775 $REMOTE_PATH && sudo chmod 666 $REMOTE_PATH/hekmat.db* 2>/dev/null || true"
+echo "🔧 [3/3] بررسی سینتکس فایل‌ها، مهاجرت دیتابیس یادآوری و تنظیم مجوزها..."
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "$SERVER_USER@$SERVER_IP" "php -l $REMOTE_PATH/donor-dashboard.php && php -l $REMOTE_PATH/login.php && php -l $REMOTE_PATH/admin/donor-reminders.php && php $REMOTE_PATH/cron/migrate_donors.php && sudo chown ubuntu:www-data $REMOTE_PATH && sudo chmod 775 $REMOTE_PATH && sudo chmod 666 $REMOTE_PATH/hekmat.db* 2>/dev/null || true"
 
 echo "🎉 استقرار نسخه جدید بنیاد حکمت روی سرور اصلی با موفقیت کامل انجام شد!"

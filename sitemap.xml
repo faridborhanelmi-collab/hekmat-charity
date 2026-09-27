@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+    
+    <!-- صفحه اصلی بنیاد نیکوکاری حکمت -->
+    <url>
+        <loc>https://hekmatfoundation.org/</loc>
+        <lastmod>2026-08-23</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+        <image:image>
+            <image:loc>https://hekmatfoundation.org/logo.png</image:loc>
+            <image:title>لوگو بنیاد نیکوکاری حکمت</image:title>
+            <image:caption>بنیاد خیریه و نیکوکاری حکمت، حامی نخبگان علمی و مستعد</image:caption>
+        </image:image>
+    </url>
+
+    <!-- پویش هر حکمتی یک حکمت‌یار -->
+    <url>
+        <loc>https://hekmatfoundation.org/campaign.php</loc>
+        <lastmod>2026-09-05</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.95</priority>
+        <image:image>
+            <image:loc>https://hekmatfoundation.org/assets/images/campaign_hero.jpg</image:loc>
+            <image:title>پویش حکمت یار - حمایت از دانش آموزان</image:title>
+        </image:image>
+    </url>
+
+    <!-- پویش الماس‌های تراش‌نخورده (استعدادیابی) -->
+    <url>
+        <loc>https://hekmatfoundation.org/almas.php</loc>
+        <lastmod>2026-09-05</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.95</priority>
+    </url>
+
+    <!-- درباره ما / داستان بنیاد حکمت -->
+    <url>
+        <loc>https://hekmatfoundation.org/about.php</loc>
+        <lastmod>2026-08-23</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- بورس حکمت: نقشه راه ۱۳ مرحله‌ای -->
+    <url>
+        <loc>https://hekmatfoundation.org/burs-hekmat.php</loc>
+        <lastmod>2026-08-23</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.85</priority>
+    </url>
+
+    <!-- خدمات آموزشی -->
+    <url>
+        <loc>https://hekmatfoundation.org/services-educational.php</loc>
+        <lastmod>2026-08-23</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- خدمات مشاوره -->
+    <url>
+        <loc>https://hekmatfoundation.org/services-counseling.php</loc>
+        <lastmod>2026-08-23</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- خدمات درمانی -->
+    <url>
+        <loc>https://hekmatfoundation.org/services-medical.php</loc>
+        <lastmod>2026-08-23</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+</urlset>

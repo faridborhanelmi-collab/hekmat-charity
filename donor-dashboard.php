@@ -340,6 +340,8 @@ $processed_students = [];
 $total_available_girls = 0;
 $total_available_boys = 0;
 $total_available_reports = 0;
+$total_available_seniors = 0;
+$total_available_juniors = 0;
 
 foreach ($available_students as $st) {
     $gender = getStudentGender($st);
@@ -353,10 +355,13 @@ foreach ($available_students as $st) {
     $grade_cat = 'senior'; // دبیرستان
     if (strpos((string)$st['grade'], 'هشتم') !== false || strpos((string)$st['grade'], 'نهم') !== false) {
         $grade_cat = 'junior'; // متوسطه اول
+        $total_available_juniors++;
     } elseif (strpos((string)$st['grade'], 'دبستان') !== false) {
         $grade_cat = 'primary';
     } elseif ($st['grade'] === 'دیپلم') {
         $grade_cat = 'higher';
+    } else {
+        $total_available_seniors++;
     }
     
     $processed_students[] = [
@@ -384,11 +389,6 @@ foreach ($available_students as $st) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پورتال پشتیبانان بورس | بنیاد حکمت</title>
-
-    <!-- Google Fonts Vazirmatn Fallback CDN -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <!-- Local Preloaded Vazirmatn Fonts -->
     <link rel="preload" href="/assets/fonts/Vazirmatn-400.woff2" as="font" type="font/woff2" crossorigin>
@@ -438,7 +438,53 @@ foreach ($available_students as $st) {
     </style>
 
     <link rel="stylesheet" href="/assets/tailwind.min.css">
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="/assets/alpine.min.js"></script>
+    <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('donorDashboard', () => ({
+            activeSponId: '<?php echo !empty($sponsored_students) ? $sponsored_students[0]['spon_id'] : ''; ?>',
+            activeStudentId: '<?php echo !empty($sponsored_students) ? $sponsored_students[0]['student_id'] : ''; ?>',
+            showDonationModal: false,
+            donationAmount: '3000000',
+            activeTab: 'gateway',
+            students: <?php echo json_encode($processed_students, JSON_UNESCAPED_UNICODE); ?>,
+            searchQuery: '',
+            activeFilter: 'all',
+            displayLimit: 12,
+            selectedStudent: null,
+            showStudentModal: false,
+            get filteredStudents() {
+                return this.students.filter(st => {
+                    if (this.activeFilter === 'female' && st.gender !== 'دختر') return false;
+                    if (this.activeFilter === 'male' && st.gender !== 'پسر') return false;
+                    if (this.activeFilter === 'has_report' && !st.has_report) return false;
+                    if (this.activeFilter === 'senior' && st.grade_cat !== 'senior') return false;
+                    if (this.activeFilter === 'junior' && st.grade_cat !== 'junior') return false;
+                    if (this.searchQuery && this.searchQuery.trim() !== '') {
+                        const q = this.searchQuery.trim().toLowerCase();
+                        const matchCode = st.code.toLowerCase().includes(q) || st.code_fa.includes(q);
+                        const matchAlias = st.alias.toLowerCase().includes(q);
+                        const matchGrade = st.grade_disp.toLowerCase().includes(q);
+                        const matchTalents = (st.talents || '').toLowerCase().includes(q);
+                        if (!matchCode && !matchAlias && !matchGrade && !matchTalents) return false;
+                    }
+                    return true;
+                });
+            },
+            get paginatedStudents() {
+                return this.filteredStudents.slice(0, this.displayLimit);
+            },
+            countByFilter(flt) {
+                if (flt === 'female') return this.students.filter(s => s.gender === 'دختر').length;
+                if (flt === 'male') return this.students.filter(s => s.gender === 'پسر').length;
+                if (flt === 'has_report') return this.students.filter(s => s.has_report).length;
+                if (flt === 'senior') return this.students.filter(s => s.grade_cat === 'senior').length;
+                if (flt === 'junior') return this.students.filter(s => s.grade_cat === 'junior').length;
+                return this.students.length;
+            }
+        }));
+    });
+    </script>
 
     <!-- iOS PWA/Homescreen Setup -->
     <link rel="apple-touch-icon" href="logo.png">
@@ -448,49 +494,7 @@ foreach ($available_students as $st) {
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="manifest" href="manifest.json">
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased overflow-x-hidden"
-    x-data="{
-        activeSponId: '<?php echo !empty($sponsored_students) ? $sponsored_students[0]['spon_id'] : ''; ?>',
-        activeStudentId: '<?php echo !empty($sponsored_students) ? $sponsored_students[0]['student_id'] : ''; ?>',
-        showDonationModal: false,
-        donationAmount: '2500000',
-        activeTab: 'gateway',
-        students: <?php echo json_encode($processed_students, JSON_UNESCAPED_UNICODE); ?>,
-        searchQuery: '',
-        activeFilter: 'all',
-        displayLimit: 12,
-        selectedStudent: null,
-        showStudentModal: false,
-        get filteredStudents() {
-            return this.students.filter(st => {
-                if (this.activeFilter === 'female' && st.gender !== 'دختر') return false;
-                if (this.activeFilter === 'male' && st.gender !== 'پسر') return false;
-                if (this.activeFilter === 'has_report' && !st.has_report) return false;
-                if (this.activeFilter === 'senior' && st.grade_cat !== 'senior') return false;
-                if (this.activeFilter === 'junior' && st.grade_cat !== 'junior') return false;
-                if (this.searchQuery && this.searchQuery.trim() !== '') {
-                    const q = this.searchQuery.trim().toLowerCase();
-                    const matchCode = st.code.toLowerCase().includes(q) || st.code_fa.includes(q);
-                    const matchAlias = st.alias.toLowerCase().includes(q);
-                    const matchGrade = st.grade_disp.toLowerCase().includes(q);
-                    const matchTalents = (st.talents || '').toLowerCase().includes(q);
-                    if (!matchCode && !matchAlias && !matchGrade && !matchTalents) return false;
-                }
-                return true;
-            });
-        },
-        get paginatedStudents() {
-            return this.filteredStudents.slice(0, this.displayLimit);
-        },
-        countByFilter(flt) {
-            if (flt === 'female') return this.students.filter(s => s.gender === 'دختر').length;
-            if (flt === 'male') return this.students.filter(s => s.gender === 'پسر').length;
-            if (flt === 'has_report') return this.students.filter(s => s.has_report).length;
-            if (flt === 'senior') return this.students.filter(s => s.grade_cat === 'senior').length;
-            if (flt === 'junior') return this.students.filter(s => s.grade_cat === 'junior').length;
-            return this.students.length;
-        }
-    }">
+<body class="bg-gray-50 text-gray-800 font-sans antialiased overflow-x-hidden" x-data="donorDashboard">
 
     <!-- Admin Manager Supervision Bar -->
     <?php if ($is_admin_viewer): ?>
@@ -762,32 +766,32 @@ foreach ($available_students as $st) {
                             <button type="button" @click="activeFilter = 'all'"
                                 :class="activeFilter === 'all' ? 'bg-teal-700 text-white font-black shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 font-bold'"
                                 class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                همه حکمت‌جویان (<span x-text="students.length"></span>)
+                                همه حکمت‌جویان (<?php echo toFarsi(count($processed_students)); ?>)
                             </button>
                             <button type="button" @click="activeFilter = 'female'"
                                 :class="activeFilter === 'female' ? 'bg-rose-700 text-white font-black shadow-md' : 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200 font-bold'"
                                 class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                دختران (<span x-text="countByFilter('female')"></span>)
+                                دختران (<?php echo toFarsi($total_available_girls); ?>)
                             </button>
                             <button type="button" @click="activeFilter = 'male'"
                                 :class="activeFilter === 'male' ? 'bg-teal-900 text-white font-black shadow-md' : 'bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200 font-bold'"
                                 class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                پسران (<span x-text="countByFilter('male')"></span>)
+                                پسران (<?php echo toFarsi($total_available_boys); ?>)
                             </button>
                             <button type="button" @click="activeFilter = 'has_report'"
                                 :class="activeFilter === 'has_report' ? 'bg-emerald-700 text-white font-black shadow-md' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-bold'"
                                 class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                دارای کارنامه رسمی (<span x-text="countByFilter('has_report')"></span>)
+                                دارای کارنامه رسمی (<?php echo toFarsi($total_available_reports); ?>)
                             </button>
                             <button type="button" @click="activeFilter = 'senior'"
                                 :class="activeFilter === 'senior' ? 'bg-gray-800 text-white font-black shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 font-bold'"
                                 class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                متوسطه دوم / دبیرستان (<span x-text="countByFilter('senior')"></span>)
+                                متوسطه دوم / دبیرستان (<?php echo toFarsi($total_available_seniors); ?>)
                             </button>
                             <button type="button" @click="activeFilter = 'junior'"
                                 :class="activeFilter === 'junior' ? 'bg-gray-800 text-white font-black shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 font-bold'"
                                 class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                متوسطه اول (<span x-text="countByFilter('junior')"></span>)
+                                متوسطه اول (<?php echo toFarsi($total_available_juniors); ?>)
                             </button>
                         </div>
                     </div>
@@ -838,7 +842,7 @@ foreach ($available_students as $st) {
                                     <div class="space-y-2 mb-6 text-xs text-gray-600 bg-white p-4 rounded-2xl border border-gray-100">
                                         <div class="flex items-center justify-between pb-2 border-b border-gray-100">
                                             <span class="text-gray-400 text-[11px]">ارزش بورس ماهانه:</span>
-                                            <span class="font-black text-teal-800 font-mono text-[11px]">۲,۵۰۰,۰۰۰ تومان</span>
+                                            <span class="font-black text-teal-800 font-mono text-[11px]">۳,۰۰۰,۰۰۰ تومان</span>
                                         </div>
                                         <div class="text-[11px] text-gray-600 pt-1 line-clamp-2 leading-relaxed">
                                             <strong class="text-gray-800 font-bold">استعداد و علایق:</strong> <span x-text="st.talents"></span>
@@ -913,7 +917,7 @@ foreach ($available_students as $st) {
                                 </div>
                                 <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                                     <span class="text-[11px] text-gray-400 block mb-1">ارزش بورس آموزشی ماهانه:</span>
-                                    <span class="text-xs font-black text-teal-800 font-mono">۲,۵۰۰,۰۰۰ تومان</span>
+                                    <span class="text-xs font-black text-teal-800 font-mono">۳,۰۰۰,۰۰۰ تومان</span>
                                 </div>
                             </div>
 
@@ -997,29 +1001,33 @@ foreach ($available_students as $st) {
                                 </div>
                             </div>
 
-                            <div class="space-y-4 my-6">
+                                <div class="space-y-4 my-6">
                                 <div>
                                     <span class="text-[10px] text-white/50 block mb-1">شماره کارت شتاب جهت واریز:</span>
                                     <div class="flex items-center justify-between bg-black/40 p-3 px-4 rounded-2xl border border-white/10">
-                                        <span class="font-mono text-base font-bold tracking-widest text-teal-200 dir-ltr" style="direction: ltr;">۶۲۲۱ - ۰۶۱۲ - ۹۹۰۰ - ۰۰۰۱</span>
-                                        <button type="button" onclick="copyCardNumber('6221061299000001', this)" class="text-[10px] bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 px-3 py-1.5 rounded-xl border border-teal-400/30 transition-all font-bold">
+                                        <span class="font-mono text-base font-bold tracking-widest text-teal-200 dir-ltr" style="direction: ltr;">۶۲۲۱ - ۰۶۱۲ - ۳۹۳۳ - ۶۳۴۲</span>
+                                        <button type="button" onclick="copyCardNumber('6221061239336342', this)" class="text-[10px] bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 px-3 py-1.5 rounded-xl border border-teal-400/30 transition-all font-bold">
                                             کپی کارت
                                         </button>
                                     </div>
                                 </div>
 
-                                <div class="text-[11px] text-white/70 space-y-1 bg-white/5 p-3 rounded-2xl border border-white/5">
+                                <div class="text-[11px] text-white/70 space-y-1.5 bg-white/5 p-3 rounded-2xl border border-white/5">
                                     <div class="flex justify-between">
                                         <span>بانک:</span>
-                                        <strong class="text-white">پارسیان (شعبه مرکزی)</strong>
+                                        <strong class="text-white">پارسیان</strong>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>صاحب حساب:</span>
+                                        <strong class="text-white">کانون حامی کودکان مستعد و توانمند (بنیاد حکمت)</strong>
                                     </div>
                                     <div class="flex justify-between">
                                         <span>شماره حساب:</span>
-                                        <span class="font-mono text-white dir-ltr font-bold">۰۱۰۴۵۸۲۹۶۳۰۰۴</span>
+                                        <span class="font-mono text-white dir-ltr font-bold">۰۲۱۷۷۴۷۰۰۱۴۳۰۰۸۲۶۰۱</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span>شماره شبا:</span>
-                                        <span class="font-mono text-white dir-ltr font-bold text-[10px]">IR12 0540 1045 8296 3004 0001</span>
+                                        <span class="font-mono text-white dir-ltr font-bold text-[10px]">IR34 0540 2177 4700 1430 0826 01</span>
                                     </div>
                                 </div>
                             </div>
@@ -1048,11 +1056,11 @@ foreach ($available_students as $st) {
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 mb-2">مبلغ مشارکت تحصیلی (تومان):</label>
                                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                                        <button type="button" @click="donationAmount = '2500000'" :class="donationAmount == '2500000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-2 rounded-xl border text-[11px] font-bold transition-all text-center">
-                                            ۲.۵ میلیون (۱ بورس)
+                                        <button type="button" @click="donationAmount = '3000000'" :class="donationAmount == '3000000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-2 rounded-xl border text-[11px] font-bold transition-all text-center">
+                                            ۳ میلیون (۱ بورس)
                                         </button>
-                                        <button type="button" @click="donationAmount = '5000000'" :class="donationAmount == '5000000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-2 rounded-xl border text-[11px] font-bold transition-all text-center">
-                                            ۵ میلیون (۲ بورس)
+                                        <button type="button" @click="donationAmount = '6000000'" :class="donationAmount == '6000000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-2 rounded-xl border text-[11px] font-bold transition-all text-center">
+                                            ۶ میلیون (۲ بورس)
                                         </button>
                                         <button type="button" @click="donationAmount = '1000000'" :class="donationAmount == '1000000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-2 rounded-xl border text-[11px] font-bold transition-all text-center">
                                             ۱ میلیون تومان
@@ -1325,17 +1333,27 @@ foreach ($available_students as $st) {
                 <div class="mb-4">
                     <span class="text-[10px] text-white/50 block mb-1">شماره کارت شتاب جهت واریز:</span>
                     <div class="flex items-center justify-between bg-black/40 p-2.5 px-4 rounded-xl border border-white/10">
-                        <span class="font-mono text-base md:text-lg font-bold tracking-widest text-teal-200 dir-ltr" style="direction: ltr;">۶۲۲۱ - ۰۶۱۲ - ۹۹۰۰ - ۰۰۰۱</span>
-                        <button type="button" onclick="copyCardNumber('6221061299000001', this)" class="text-[11px] bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 px-2.5 py-1 rounded-lg border border-teal-400/30 transition-all font-bold">
+                        <span class="font-mono text-base md:text-lg font-bold tracking-widest text-teal-200 dir-ltr" style="direction: ltr;">۶۲۲۱ - ۰۶۱۲ - ۳۹۳۳ - ۶۳۴۲</span>
+                        <button type="button" onclick="copyCardNumber('6221061239336342', this)" class="text-[11px] bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 px-2.5 py-1 rounded-lg border border-teal-400/30 transition-all font-bold">
                             کپی کارت
                         </button>
                     </div>
                 </div>
 
                 <!-- IBAN / Sheba -->
-                <div class="flex justify-between items-center text-[10px] text-white/70 border-t border-white/10 pt-3">
-                    <span>شبا: <span class="font-mono text-white dir-ltr font-bold text-[9px]">IR12 0540 1045 8296 3004 0001</span></span>
-                    <span>به نام: <strong class="text-white">بنیاد حکمت</strong></span>
+                <div class="space-y-1 text-[10px] text-white/70 border-t border-white/10 pt-3">
+                    <div class="flex justify-between">
+                        <span>شماره شبا:</span>
+                        <span class="font-mono text-white dir-ltr font-bold text-[9px]">IR34 0540 2177 4700 1430 0826 01</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>شماره حساب:</span>
+                        <span class="font-mono text-white dir-ltr font-bold text-[9px]">۰۲۱۷۷۴۷۰۰۱۴۳۰۰۸۲۶۰۱</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>به نام:</span>
+                        <strong class="text-white">کانون حامی کودکان مستعد و توانمند (بنیاد حکمت)</strong>
+                    </div>
                 </div>
             </div>
 
@@ -1346,11 +1364,11 @@ foreach ($available_students as $st) {
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-2">مبلغ مشارکت (تومان):</label>
                     <div class="grid grid-cols-2 gap-2 mb-3">
-                        <button type="button" @click="donationAmount = '2500000'" :class="donationAmount == '2500000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center">
-                            ۲,۵۰۰,۰۰۰ (بورس ۱ ماه)
+                        <button type="button" @click="donationAmount = '3000000'" :class="donationAmount == '3000000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center">
+                            ۳,۰۰۰,۰۰۰ (بورس ۱ ماه)
                         </button>
-                        <button type="button" @click="donationAmount = '5000000'" :class="donationAmount == '5000000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center">
-                            ۵,۰۰۰,۰۰۰ (۲ دانش‌آموز)
+                        <button type="button" @click="donationAmount = '6000000'" :class="donationAmount == '6000000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center">
+                            ۶,۰۰۰,۰۰۰ (۲ دانش‌آموز)
                         </button>
                         <button type="button" @click="donationAmount = '1000000'" :class="donationAmount == '1000000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center">
                             ۱,۰۰۰,۰۰۰ (حمایت آزاد)
@@ -1422,3 +1440,5 @@ function copyCardNumber(number, btn) {
     }
 }
 </script>
+</body>
+</html>

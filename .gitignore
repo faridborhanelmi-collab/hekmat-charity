@@ -1,6 +1,13 @@
 *.zip
+*.tar.gz
+*.bak*
+node_modules/
+test-results/
 __pycache__/
 .DS_Store
 scratch/
 php_server_log.txt
 *.mp4
+database.sqlite
+uploads/docs/
+.github/

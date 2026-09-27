@@ -1,17 +1,17 @@
 <?php
 session_start();
 require_once '../includes/db.php';
+require_once '../includes/auth.php';
 
-// Access Control
-if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
-    header("Location: ../login.php");
-    exit();
-}
+// Access Control - Financial Only
+require_financial_access();
+$can_edit_financial = can_edit_financial();
 
 // ----------------------------------------------------
 // EXPORT TO EXCEL (CSV)
 // ----------------------------------------------------
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
+    log_activity('خروجی اکسل اسناد مالی', 'financial', 0, 'دریافت خروجی ترازنامه و گردش حساب‌ها در قالب اکسل (CSV)');
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename=Hekmat_Financial_Report_' . date('Y-m-d') . '.csv');
     
@@ -177,9 +177,16 @@ if ($total_income > 0) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>دفتر حسابداری و مدیریت مالی | بنیاد حکمت</title>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:100;font-display:swap;src:url('/assets/fonts/Vazirmatn-100.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:300;font-display:swap;src:url('/assets/fonts/Vazirmatn-300.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/Vazirmatn-400.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/fonts/Vazirmatn-500.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/Vazirmatn-700.woff2') format('woff2')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:900;font-display:swap;src:url('/assets/fonts/Vazirmatn-900.woff2') format('woff2')}
+</style>
+<link rel="stylesheet" href="/assets/tailwind.min.css">
+<script defer src="/assets/alpine.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -252,7 +259,10 @@ if ($total_income > 0) {
                 <span class="text-gray-300">/</span>
                 <span class="font-bold text-gray-600">دفتر حسابداری مالی</span>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
+                <a href="donor-analytics.php" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                    📊 تحلیل رفتار و تراز خیرین
+                </a>
                 <a href="import-statement.php" class="bg-teal-50 text-teal-700 hover:bg-teal-100 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
                     📄 اسکن صورتحساب بانکی (PDF)
                 </a>
@@ -268,10 +278,16 @@ if ($total_income > 0) {
                 <h1 class="text-4xl font-black mb-4">مدیریت حسابداری و شفافیت مالی</h1>
                 <p class="text-teal-100 opacity-80 max-w-xl">ثبت و رهگیری مستقیم تمام کمک‌های دریافتی حامیان و مخارج تحصیلی، درمانی و معیشتی دانش‌آموزان به صورت کاملاً یکپارچه.</p>
             </div>
+            <?php if ($can_edit_financial): ?>
             <div class="flex gap-4">
                 <button @click="showIncomeModal = true" class="px-6 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl shadow-xl transition-all hover:-translate-y-0.5">+ ثبت واریزی (درآمد)</button>
                 <button @click="showExpenseModal = true" class="px-6 py-4 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-2xl shadow-xl transition-all hover:-translate-y-0.5">+ ثبت هزینه جدید</button>
             </div>
+            <?php else: ?>
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-2xl text-xs font-bold text-teal-200 flex items-center gap-2">
+                <span>👁️</span> حالت نظارت هیئت مدیره (اسناد و تراکنش‌ها - فقط خواندنی)
+            </div>
+            <?php endif; ?>
         </div>
     </header>
 

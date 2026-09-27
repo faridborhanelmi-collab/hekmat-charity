@@ -1,0 +1,69 @@
+# ==========================================
+# Robots.txt for Hekmat Charity Foundation
+# https://hekmatfoundation.org
+# ==========================================
+
+# ─── Standard Web Crawlers ───
+User-agent: *
+Allow: /
+Allow: /about.php
+Allow: /about
+Allow: /burs-hekmat.php
+Allow: /burs-hekmat
+Allow: /campaign.php
+Allow: /campaign
+Allow: /almas.php
+Allow: /services-*.php
+Allow: /services-*
+Allow: /assets/
+Allow: /logo.png
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+# Disallow Private & Admin Areas
+Disallow: /admin/
+Disallow: /admin-*.php
+Disallow: /donor-dashboard.php
+Disallow: /student-dashboard.php
+Disallow: /donor-detail.php
+Disallow: /person-detail.php
+Disallow: /donors-list.php
+Disallow: /expenses-list.php
+Disallow: /people-list.php
+Disallow: /sponsor-student.php
+Disallow: /login.php
+Disallow: /register.php
+Disallow: /uploads/
+Disallow: /scratch/
+Disallow: /includes/
+
+# Disallow Database & Source Code
+Disallow: /*.db$
+Disallow: /*.sqlite$
+Disallow: /*.xlsx$
+Disallow: /*.xls$
+Disallow: /*.zip$
+Disallow: /*.py$
+Disallow: /alter_db.php
+Disallow: /setup_psychology_table.php
+Disallow: /import_psychology.php
+Disallow: /update-statuses.php
+
+# ─── AI & Agentic Browsing Support ───
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Sitemap & LLMs
+Sitemap: https://hekmatfoundation.org/sitemap.xml

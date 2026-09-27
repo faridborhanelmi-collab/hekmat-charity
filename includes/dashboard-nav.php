@@ -35,14 +35,25 @@ $related_id = $_SESSION['related_id'] ?? 0;
         <div class="hidden lg:flex items-center gap-4 text-sm font-bold text-gray-600">
             <a href="<?php echo $base_url; ?>index.php" class="hover:text-primary-600 transition-colors">خانه</a>
             
-            <?php if ($is_admin): ?>
+            <?php if ($role === 'data_operator' || (function_exists('is_viana') && is_viana())): ?>
+                <a href="<?php echo $base_url; ?>admin/library.php" class="text-teal-700 bg-teal-50 hover:bg-teal-100 px-3.5 py-1.5 rounded-lg border border-teal-200 text-xs flex items-center gap-1 font-bold">📚 بانک کتاب و امانات (۲۰۱ جلد)</a>
+                <a href="<?php echo $base_url; ?>switch-role.php?target=student" class="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 text-xs flex items-center gap-1 font-bold">🎒 پورتال دانش‌آموزی ویانا</a>
+            <?php elseif ($is_admin): ?>
                 <a href="<?php echo $base_url; ?>admin/index.php" class="text-teal-600 bg-teal-50 px-4 py-1.5 rounded-lg border border-teal-100">میز کار مدیریت</a>
+                <a href="<?php echo $base_url; ?>admin/library.php" class="text-amber-700 hover:bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 text-xs flex items-center gap-1 font-bold">📚 بانک کتاب و امانات</a>
+                <a href="<?php echo $base_url; ?>student-dashboard.php" class="text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 text-xs flex items-center gap-1 font-bold">🎒 پورتال دانش‌آموزان</a>
+                <a href="<?php echo $base_url; ?>donor-dashboard.php" class="text-teal-700 hover:bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-200 text-xs flex items-center gap-1 font-bold">💎 پورتال خیرین</a>
+                <a href="<?php echo $base_url; ?>admin/diamond-candidates.php" class="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 text-xs flex items-center gap-1 font-bold">💎 گنج‌های پنهان</a>
+                <?php if ($role === 'superadmin' || $role === 'admin'): ?>
+                    <a href="<?php echo $base_url; ?>admin/audit-logs.php" class="text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 text-xs flex items-center gap-1">📜 لاگ سیستم</a>
+                <?php endif; ?>
             <?php elseif ($role === 'student'): ?>
                 <a href="<?php echo $base_url; ?>student-dashboard.php" class="text-blue-600 bg-blue-50 px-4 py-1.5 rounded-lg border border-blue-100">داشبورد من</a>
             <?php elseif ($role === 'benefactor'): ?>
                 <a href="<?php echo $base_url; ?>donor-dashboard.php" class="text-teal-600 bg-teal-50 px-4 py-1.5 rounded-lg border border-teal-100">پورتال پشتیبان</a>
             <?php endif; ?>
             
+            <button onclick="openChangePasswordModal()" class="text-gray-600 hover:text-teal-700 bg-gray-50 hover:bg-teal-50 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-teal-200 transition-colors text-xs flex items-center gap-1 font-bold">🔑 تغییر رمز</button>
             <a href="<?php echo $base_url; ?>admin-logout.php" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1">خروج</a>
         </div>
         
@@ -77,11 +88,33 @@ $related_id = $_SESSION['related_id'] ?? 0;
             
             <hr class="my-4 border-gray-100">
             
-            <!-- Admin Links -->
-            <?php if ($is_admin): ?>
+            <!-- Data Operator (Viana) -->
+            <?php if ($role === 'data_operator' || (function_exists('is_viana') && is_viana())): ?>
+                <div class="text-[10px] text-gray-400 mb-2 px-3 uppercase tracking-wider">میز کار اپراتور کتابخانه</div>
+                <a href="<?php echo $base_url; ?>admin/library.php" class="flex items-center gap-3 p-3 hover:bg-teal-50 text-teal-800 rounded-xl transition-colors bg-teal-50/50 font-bold">
+                    <span class="text-xl">📚</span> بانک کتاب و صف‌های انتظار (۲۰۱ جلد)
+                </a>
+                <a href="<?php echo $base_url; ?>switch-role.php?target=student" class="flex items-center gap-3 p-3 hover:bg-indigo-50 text-indigo-800 rounded-xl transition-colors font-bold">
+                    <span class="text-xl">🎒</span> ورود به پورتال دانش‌آموزی ویانا
+                </a>
+
+            <!-- Full Admin / Secretary Links -->
+            <?php elseif ($is_admin): ?>
                 <div class="text-[10px] text-gray-400 mb-2 px-3 uppercase tracking-wider">مدیریت پلتفرم</div>
                 <a href="<?php echo $base_url; ?>admin/index.php" class="flex items-center gap-3 p-3 hover:bg-teal-50 text-teal-700 rounded-xl transition-colors bg-teal-50/50">
                     <span class="text-xl">🎛️</span> داشبورد کلان مدیریت
+                </a>
+                <a href="<?php echo $base_url; ?>admin/library.php" class="flex items-center gap-3 p-3 hover:bg-amber-50 text-amber-800 rounded-xl transition-colors bg-amber-50/50 font-bold">
+                    <span class="text-xl">📚</span> بانک کتاب و امانات
+                </a>
+                <a href="<?php echo $base_url; ?>student-dashboard.php" class="flex items-center gap-3 p-3 hover:bg-indigo-50 text-indigo-700 rounded-xl transition-colors">
+                    <span class="text-xl">🎒</span> پورتال دانش‌آموزان (نمای دانش‌آموز)
+                </a>
+                <a href="<?php echo $base_url; ?>donor-dashboard.php" class="flex items-center gap-3 p-3 hover:bg-teal-50 text-teal-700 rounded-xl transition-colors">
+                    <span class="text-xl">💎</span> پورتال خیرین و حامیان (نمای خیر)
+                </a>
+                <a href="<?php echo $base_url; ?>admin/diamond-candidates.php" class="flex items-center gap-3 p-3 hover:bg-emerald-50 text-emerald-700 rounded-xl transition-colors bg-emerald-50/50 font-bold">
+                    <span class="text-xl">💎</span> پویش گنج‌های پنهان
                 </a>
                 <a href="<?php echo $base_url; ?>people-list.php" class="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors">
                     <span class="text-xl">📋</span> لیست مددجویان
@@ -98,9 +131,17 @@ $related_id = $_SESSION['related_id'] ?? 0;
                 <a href="<?php echo $base_url; ?>donors-list.php" class="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors">
                     <span class="text-xl">💎</span> پورتال نیکوکاران
                 </a>
+                <a href="<?php echo $base_url; ?>admin/donor-analytics.php" class="flex items-center gap-3 p-3 hover:bg-teal-50 text-teal-700 rounded-xl transition-colors">
+                    <span class="text-xl">📊</span> تحلیل رفتار و تراز خیرین
+                </a>
                 <a href="<?php echo $base_url; ?>expenses-list.php" class="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors">
                     <span class="text-xl">💸</span> گزارش هزینه‌ها
                 </a>
+                <?php if ($role === 'superadmin' || $role === 'admin'): ?>
+                <a href="<?php echo $base_url; ?>admin/audit-logs.php" class="flex items-center gap-3 p-3 hover:bg-amber-50 text-amber-700 rounded-xl transition-colors">
+                    <span class="text-xl">📜</span> گزارش و لاگ سیستم
+                </a>
+                <?php endif; ?>
             
             <!-- Student Links -->
             <?php elseif ($role === 'student'): ?>
@@ -108,7 +149,14 @@ $related_id = $_SESSION['related_id'] ?? 0;
                 <a href="<?php echo $base_url; ?>student-dashboard.php" class="flex items-center gap-3 p-3 hover:bg-blue-50 text-blue-700 rounded-xl transition-colors bg-blue-50/50">
                     <span class="text-xl">🎓</span> داشبورد من
                 </a>
-                <!-- You can add jump links here if needed -->
+                <a href="<?php echo $base_url; ?>student-dashboard.php?tab=books" class="flex items-center gap-3 p-3 hover:bg-teal-50 text-teal-700 rounded-xl transition-colors font-bold">
+                    <span class="text-xl">📚</span> بانک کتاب و امانات (۲۰۱ جلد)
+                </a>
+                <?php if (function_exists('is_viana') && is_viana()): ?>
+                    <a href="<?php echo $base_url; ?>admin/library.php" class="flex items-center gap-3 p-3 hover:bg-indigo-50 text-indigo-700 rounded-xl transition-colors font-bold">
+                        <span class="text-xl">💻</span> میز کار اپراتور کتابخانه
+                    </a>
+                <?php endif; ?>
                 
             <!-- Donor Links -->
             <?php elseif ($role === 'benefactor'): ?>
@@ -160,4 +208,24 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileOverlay.addEventListener('click', toggleMenu);
     }
 });
+
+function openChangePasswordModal() {
+    let modal = document.getElementById('change-pwd-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        let msg = document.getElementById('pwd-msg');
+        if (msg) msg.classList.add('hidden');
+        let form = document.getElementById('change-pwd-form');
+        if (form) form.reset();
+    }
+}
+
+function closeChangePasswordModal() {
+    let modal = document.getElementById('change-pwd-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
 </script>

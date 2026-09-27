@@ -1,0 +1,69 @@
+# ==============================================================================
+# Apache Configuration for Hekmat Charity (.htaccess)
+# ==============================================================================
+
+Options -Indexes
+ServerSignature Off
+
+# 1. Block Direct Access to Database, Excel, Python & Sensitive Files
+<FilesMatch "\.(db|sqlite|sqlite3|xlsx|xls|log|py|sh|sql|env|bak|zip|tar|gz)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<Files "hekmat.db">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "report.json">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "hekmat_all_students_profiles.json">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# 2. Rewrite Rules & Clean URLs
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Hide .php Extension
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s([^.]+)\.php [NC]
+    RewriteRule ^ %1 [R=301,L]
+
+    # Rewrite Clean URLs to .php
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*?)/?$ $1.php [L]
+</IfModule>
+
+# 3. Security & SEO HTTP Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# 4. Gzip / Deflate Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml image/svg+xml
+</IfModule>
+
+# 5. Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
