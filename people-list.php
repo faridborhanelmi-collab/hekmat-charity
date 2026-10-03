@@ -80,10 +80,11 @@ foreach ($students as $s) {
                     <span>📚</span>
                     <span>بانک کتاب‌ها و امانات (۲۰۱ جلد)</span>
                 </a>
-                <?php if (can_add_student()): ?>
+                <?php if (can_add_student() || in_array($_SESSION['role'] ?? '', ['superadmin', 'secretary', 'admin'])): ?>
                 <button onclick="openAddStudentModal()" 
-                        class="bg-teal-500 hover:bg-teal-400 text-white font-black px-6 py-3 rounded-2xl shadow-xl transition-all transform hover:-translate-y-1 text-sm flex items-center gap-2">
-                    <span>+</span> افزودن مددجوی جدید
+                        class="bg-teal-500 hover:bg-teal-400 text-white font-black px-6 py-3 rounded-2xl shadow-xl transition-all transform hover:-translate-y-1 text-sm flex items-center gap-2 cursor-pointer">
+                    <span class="text-lg leading-none">+</span>
+                    <span>افزودن مددجوی جدید</span>
                 </button>
                 <?php endif; ?>
             </div>
@@ -308,7 +309,7 @@ foreach ($students as $s) {
         }
     </script>
 
-    <?php if (can_add_student()): ?>
+    <?php if (can_add_student() || in_array($_SESSION['role'] ?? '', ['superadmin', 'secretary', 'admin'])): ?>
     <!-- Modal: افزودن مددجوی جدید (تکی و گروهی) -->
     <div id="add-student-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-hidden border border-gray-100 flex flex-col animate-fade-in text-gray-800">
@@ -620,6 +621,14 @@ foreach ($students as $s) {
                 btn.innerHTML = '<span>🚀</span><span>شروع پردازش و بارگذاری لیست</span>';
             }
         }
+
+        // Auto-open modal if requested via URL parameters
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('open_modal') === '1' || urlParams.get('action') === 'add') {
+                openAddStudentModal();
+            }
+        });
     </script>
     <?php endif; ?>
 
