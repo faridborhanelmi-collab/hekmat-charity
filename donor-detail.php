@@ -501,7 +501,24 @@ $default_sms_preview = $smsService->renderTemplate(
             <form id="donationFormElement" class="space-y-6">
                 <input type="hidden" name="action" :value="donationForm.id ? 'edit_donation' : 'add_donation'">
                 <input type="hidden" name="id" :value="donationForm.id">
+                <?php if (can_reassign_donation()): ?>
+                <div x-show="donationForm.id" class="p-3 bg-amber-50 rounded-2xl border border-amber-200">
+                    <label class="text-[11px] font-bold text-amber-900 mb-1 block">انتقال این واریزی به حساب نیکوکار دیگر:</label>
+                    <select name="donor_id" class="w-full bg-white border border-amber-200 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500">
+                        <option value="<?php echo $donor['id']; ?>">همین نیکوکار (<?php echo htmlspecialchars($donor['name'] . ' ' . $donor['surname']); ?>)</option>
+                        <?php 
+                        $all_other_donors = $pdo->query("SELECT id, name, surname, phone FROM donors WHERE id != {$donor['id']} ORDER BY name ASC")->fetchAll();
+                        foreach ($all_other_donors as $od): ?>
+                        <option value="<?php echo $od['id']; ?>">انتقال به: <?php echo htmlspecialchars($od['name'] . ' ' . $od['surname'] . ($od['phone'] ? ' (' . $od['phone'] . ')' : '')); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <template x-if="!donationForm.id">
+                    <input type="hidden" name="donor_id" value="<?php echo $donor['id']; ?>">
+                </template>
+                <?php else: ?>
                 <input type="hidden" name="donor_id" value="<?php echo $donor['id']; ?>">
+                <?php endif; ?>
                 <div class="grid grid-cols-2 gap-4">
                     <input type="text" name="amount" x-model="donationForm.amount" placeholder="مبلغ (ریال)" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-bold text-left" dir="ltr">
                     <input type="text" name="date" x-model="donationForm.date" placeholder="تاریخ ثبت" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm text-left" dir="ltr">
