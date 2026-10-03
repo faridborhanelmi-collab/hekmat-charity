@@ -240,8 +240,31 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                     </button>
                 </div>
 
+                <?php elseif (($_SESSION['role'] ?? '') === 'secretary'): ?>
+                <!-- Secretary (Mrs. Abbasi) Banner -->
+                <div class="mb-8 p-6 md:p-8 rounded-[2.5rem] bg-gradient-to-r from-teal-900 via-primary-900 to-slate-900 border border-teal-500/30 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="flex items-center gap-5">
+                        <div class="w-16 h-16 rounded-2xl bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-3xl flex-shrink-0">📋</div>
+                        <div>
+                            <div class="text-xs font-bold text-teal-300 mb-1">دبیرخانه و امور اداری بنیاد نیکوکاری حکمت</div>
+                            <h2 class="text-xl md:text-2xl font-black text-white">سرکار خانم عباسی، به میز کار اداری خوش آمدید</h2>
+                            <p class="text-xs text-gray-300 mt-1">مدیریت پرونده نخبگان، امور دفتری و ثبت مددجویان در اختیار شماست.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <a href="../people-list.php?open_modal=1" class="px-5 py-2.5 bg-teal-500 hover:bg-teal-400 text-white text-xs font-black rounded-2xl transition-all shadow-lg flex items-center gap-2 hover:-translate-y-0.5">
+                            <span class="text-base leading-none">+</span>
+                            <span>افزودن مددجوی جدید</span>
+                        </a>
+                        <button onclick="openChangePasswordModal()" class="px-5 py-2.5 bg-white/10 hover:bg-teal-600 border border-white/20 text-white text-xs font-bold rounded-2xl transition-all flex items-center gap-2">
+                            <span>🔑</span>
+                            <span>تغییر رمز عبور</span>
+                        </button>
+                    </div>
+                </div>
+
                 <?php else: ?>
-                <!-- CEO / Superadmin Banner -->
+                <!-- CEO / Superadmin (Mr. Farid Elmi) Banner -->
                 <div class="mb-8 p-6 md:p-8 rounded-[2.5rem] bg-gradient-to-r from-primary-900 via-slate-900 to-teal-950 border border-teal-500/30 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
                     <div class="flex items-center gap-5">
                         <div class="w-16 h-16 rounded-2xl bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-3xl flex-shrink-0">👑</div>
@@ -250,10 +273,16 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                             <h2 class="text-xl md:text-2xl font-black text-white">جناب آقای فرید علمی، به میز کار جامع مدیریت خوش آمدید</h2>
                         </div>
                     </div>
-                    <button onclick="openChangePasswordModal()" class="px-5 py-2.5 bg-white/10 hover:bg-teal-600 border border-white/20 text-white text-xs font-bold rounded-2xl transition-all flex items-center gap-2">
-                        <span>🔑</span>
-                        <span>تغییر رمز عبور</span>
-                    </button>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <a href="../people-list.php?open_modal=1" class="px-5 py-2.5 bg-teal-500 hover:bg-teal-400 text-white text-xs font-black rounded-2xl transition-all shadow-lg flex items-center gap-2 hover:-translate-y-0.5">
+                            <span class="text-base leading-none">+</span>
+                            <span>افزودن مددجوی جدید</span>
+                        </a>
+                        <button onclick="openChangePasswordModal()" class="px-5 py-2.5 bg-white/10 hover:bg-teal-600 border border-white/20 text-white text-xs font-bold rounded-2xl transition-all flex items-center gap-2">
+                            <span>🔑</span>
+                            <span>تغییر رمز عبور</span>
+                        </button>
+                    </div>
                 </div>
                 <?php endif; ?>
 
@@ -416,11 +445,16 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                                 </div>
                             </div>
                             
-                            <div class="pt-6 border-t border-white/10 mt-6 flex items-center justify-between text-[11px] text-gray-400">
-                                <span>نمای فعال: شبیه‌سازی کامل دسترسی دانش‌آموز</span>
-                                <a href="../student-dashboard.php" class="text-teal-300 hover:underline font-bold flex items-center gap-1">
-                                    <span>مشاهده اولین دانش‌آموز فعال</span>
-                                    <span>↗</span>
+                            <div class="pt-6 border-t border-white/10 mt-6 flex flex-wrap items-center justify-between gap-3 text-[11px] text-gray-400">
+                                <?php if (can_add_student()): ?>
+                                <a href="../people-list.php?open_modal=1" class="px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5 hover:-translate-y-0.5">
+                                    <span class="text-base leading-none">+</span>
+                                    <span>افزودن مددجوی جدید (تکی و گروهی)</span>
+                                </a>
+                                <?php endif; ?>
+                                <a href="../people-list.php" class="text-teal-300 hover:text-white font-bold text-xs flex items-center gap-1">
+                                    <span>لیست کامل مددجویان (<?php echo toFarsiDigits($total_students); ?>)</span>
+                                    <span>←</span>
                                 </a>
                             </div>
                         </div>
