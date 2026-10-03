@@ -437,11 +437,31 @@ if ($total_income > 0) {
                                     <?php echo ($item['amount'] < 0 ? '-' : '') . toFarsiDigits(number_format(abs($item['amount']))); ?>
                                 </td>
                                 <td class="py-4 text-center no-print">
-                                    <?php if ($item['type'] === 'income'): ?>
-                                    <a href="receipt.php?id=<?php echo $item['id']; ?>" class="text-[10px] text-teal-600 font-bold hover:underline">📄 فیش</a>
-                                    <?php else: ?>
-                                    <span class="text-gray-300">-</span>
-                                    <?php endif; ?>
+                                    <div class="flex items-center justify-center gap-2">
+                                        <?php if ($item['type'] === 'income'): ?>
+                                        <a href="receipt.php?id=<?php echo $item['id']; ?>" class="text-[10px] text-teal-600 font-bold hover:underline">📄 فیش</a>
+                                        <?php if (can_reassign_donation()): ?>
+                                        <button type="button" 
+                                                onclick='openReassignModal(<?php echo json_encode([
+                                                    "id" => $item["id"],
+                                                    "amount" => $item["amount"],
+                                                    "amount_fmt" => number_format($item["amount"]),
+                                                    "date" => $item["date"],
+                                                    "receipt_no" => $item["receipt_no"],
+                                                    "current_donor_id" => $item["person_id"],
+                                                    "current_donor_name" => $item["person_name"],
+                                                    "desc" => $item["description"]
+                                                ], JSON_UNESCAPED_UNICODE); ?>)' 
+                                                class="text-[10px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                                title="منظور کردن این واریزی به حساب نیکوکار دیگر">
+                                            <span>🔄</span>
+                                            <span>انتقال به نیکوکار</span>
+                                        </button>
+                                        <?php endif; ?>
+                                        <?php else: ?>
+                                        <span class="text-gray-300">-</span>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -608,6 +628,131 @@ if ($total_income > 0) {
         </div>
     </div>
 
+
+    <!-- Modal: Reassign Donation (No Print) -->
+    <?php if (can_reassign_donation()): ?>
+    <div id="reassignDonationModal" class="fixed inset-0 z-[110] hidden items-center justify-center p-6 bg-primary-900/60 backdrop-blur-sm no-print">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-lg p-8 shadow-2xl border border-gray-100 transform transition-all relative">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🔄</span>
+                    <div>
+                        <h3 class="text-lg font-black text-primary-900">منظور کردن واریزی به حساب نیکوکار دیگر</h3>
+                        <p class="text-[11px] text-gray-400 font-bold">انتقال تراکنش به پرونده نیکوکار واقعی و ثبت واریزکننده واسط</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeReassignModal()" class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-400 font-bold flex items-center justify-center">✕</button>
+            </div>
+
+            <form id="reassignDonationForm" onsubmit="submitReassignDonation(event)" class="space-y-4">
+                <input type="hidden" name="action" value="reassign_donation">
+                <input type="hidden" id="reassign_donation_id" name="donation_id" value="">
+
+                <!-- Summary card of donation -->
+                <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-xs space-y-1.5">
+                    <div class="flex justify-between text-gray-600">
+                        <span>مبلغ واریزی:</span>
+                        <strong id="reassign_amount_display" class="text-emerald-700 font-black"></strong>
+                    </div>
+                    <div class="flex justify-between text-gray-600">
+                        <span>تاریخ و شماره سند:</span>
+                        <span id="reassign_date_receipt" class="font-bold"></span>
+                    </div>
+                    <div class="flex justify-between text-gray-600">
+                        <span>نیکوکار فعلی:</span>
+                        <span id="reassign_current_donor" class="text-rose-700 font-bold"></span>
+                    </div>
+                </div>
+
+                <!-- Field 1: Target Donor -->
+                <div>
+                    <label class="text-xs font-bold text-gray-700 mb-1 block">نیکوکار مقصد (منظور شود به حساب:) <span class="text-rose-500">*</span></label>
+                    <select id="reassign_target_donor_id" name="target_donor_id" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500">
+                        <option value="">-- انتخاب نیکوکار مقصد --</option>
+                        <?php foreach ($donors as $dn): ?>
+                        <option value="<?php echo $dn['id']; ?>"><?php echo htmlspecialchars($dn['name'] . ' ' . $dn['surname'] . ($dn['phone'] ? ' (' . $dn['phone'] . ')' : '')); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Field 2: Payer Name (On behalf of) -->
+                <div>
+                    <label class="text-xs font-bold text-gray-700 mb-1 block">نام واریزکننده اصلی / از طرف چه کسی؟</label>
+                    <input type="text" id="reassign_payer_name" name="payer_name" placeholder="مثال: خانم سمیرا مرادی (واریزکننده از کارت)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500">
+                    <span class="text-[10px] text-gray-400 mt-1 block">نام شخصی که پول را از حسابش واریز کرده، اما به نیت نیکوکار انتخاب‌شده بالاست.</span>
+                </div>
+
+                <!-- Field 3: Reason / Note -->
+                <div>
+                    <label class="text-xs font-bold text-gray-700 mb-1 block">توضیحات و علت انتساب به این نیکوکار</label>
+                    <textarea id="reassign_reason" name="reassign_reason" rows="2" placeholder="مثال: تماس تلفنی با منشی بنیاد و اعلام واریز به نیت پرونده شماره..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="submit" id="btn_submit_reassign" class="flex-1 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-black rounded-xl shadow-lg transition-all text-xs flex items-center justify-center gap-2 cursor-pointer">
+                        <span>✓</span>
+                        <span>تایید و منظور کردن به حساب نیکوکار جدید</span>
+                    </button>
+                    <button type="button" onclick="closeReassignModal()" class="px-5 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-xs transition-all cursor-pointer">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function openReassignModal(data) {
+        document.getElementById('reassign_donation_id').value = data.id;
+        document.getElementById('reassign_amount_display').innerText = data.amount_fmt + ' ریال';
+        document.getElementById('reassign_date_receipt').innerText = (data.date || '-') + (data.receipt_no ? (' (سند: #' + data.receipt_no + ')') : '');
+        document.getElementById('reassign_current_donor').innerText = data.current_donor_name || 'ناشناس';
+        document.getElementById('reassign_target_donor_id').value = '';
+        document.getElementById('reassign_payer_name').value = '';
+        document.getElementById('reassign_reason').value = '';
+        
+        const modal = document.getElementById('reassignDonationModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeReassignModal() {
+        const modal = document.getElementById('reassignDonationModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    async function submitReassignDonation(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn_submit_reassign');
+        const origText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span>در حال پردازش و ثبت...</span>';
+
+        const form = document.getElementById('reassignDonationForm');
+        const formData = new FormData(form);
+
+        try {
+            const res = await fetch('../admin-request-handler.php', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                closeReassignModal();
+                window.location.reload();
+            } else {
+                alert(data.message || 'خطا در ثبت انتقال واریزی.');
+                btn.disabled = false;
+                btn.innerHTML = origText;
+            }
+        } catch (err) {
+            alert('خطای ارتباط با سرور: ' + err.message);
+            btn.disabled = false;
+            btn.innerHTML = origText;
+        }
+    }
+    </script>
+    <?php endif; ?>
 
 <script>
   if ('serviceWorker' in navigator) {
