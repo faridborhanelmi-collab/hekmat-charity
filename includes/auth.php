@@ -86,6 +86,14 @@ function can_edit_financial() {
 }
 
 /**
+ * آیا کاربر دسترسی انتقال یا انتساب واریزی به نیکوکار دیگر را دارد؟
+ * منحصراً فقط مدیرعامل بنیاد (آقای فرید علمی - superadmin) و منشی بنیاد (سرکار خانم عباسی - secretary)
+ */
+function can_reassign_donation() {
+    return has_role(['superadmin', 'secretary', 'admin']);
+}
+
+/**
  * بررسی دسترسی مالی (مشاهده دفاتر و اسناد)
  */
 function can_access_financial() {
