@@ -524,6 +524,11 @@ if (isset($_GET['logout'])) {
                 <a href="person-detail.php?id=<?php echo $student_id; ?>" class="bg-white/15 hover:bg-white/25 text-white border border-white/20 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1">
                     <span>📄</span> پرونده اداری
                 </a>
+                <?php if (can_add_student()): ?>
+                <a href="people-list.php?open_modal=1" class="bg-emerald-500 hover:bg-emerald-400 text-white font-black px-3 py-1.5 rounded-xl transition-all shadow-md flex items-center gap-1">
+                    <span class="text-sm font-black">+</span> افزودن مددجو
+                </a>
+                <?php endif; ?>
                 <a href="donor-dashboard.php" class="bg-teal-600/80 hover:bg-teal-700 text-white px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1">
                     <span>💎</span> پورتال خیرین
                 </a>
