@@ -399,6 +399,10 @@ switch ($action) {
         break;
 
     case 'edit_donation':
+        if (!can_edit_financial()) {
+            echo json_encode(['success' => false, 'message' => 'شما دسترسی لازم برای ویرایش اسناد مالی را ندارید.']);
+            exit();
+        }
         $id = (int)$_POST['id'];
         $amount = cleanNumber($_POST['amount'] ?? 0);
         $year = $_POST['year'] ?? '';
@@ -406,12 +410,85 @@ switch ($action) {
         $date = $_POST['date'] ?? '';
         $receipt = $_POST['receipt_no'] ?? '';
         $desc = $_POST['description'] ?? '';
+        $new_donor_id = isset($_POST['donor_id']) ? (int)$_POST['donor_id'] : 0;
 
-        $stmt = $pdo->prepare("UPDATE donations SET amount=?, date=?, month=?, year=?, receipt_no=?, description=? WHERE id=?");
-        $success = $stmt->execute([$amount, $date, $month, $year, $receipt, $desc, $id]);
+        if ($new_donor_id > 0) {
+            $stmt = $pdo->prepare("UPDATE donations SET donor_id=?, amount=?, date=?, month=?, year=?, receipt_no=?, description=? WHERE id=?");
+            $success = $stmt->execute([$new_donor_id, $amount, $date, $month, $year, $receipt, $desc, $id]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE donations SET amount=?, date=?, month=?, year=?, receipt_no=?, description=? WHERE id=?");
+            $success = $stmt->execute([$amount, $date, $month, $year, $receipt, $desc, $id]);
+        }
         log_activity('ویرایش واریزی خیر', 'donation', $id, "ویرایش واریزی به مبلغ " . number_format($amount) . " ریال");
         echo json_encode(['success' => $success]);
         break;
+
+    case 'reassign_donation':
+        if (!can_reassign_donation()) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'دسترسی غیرمجاز. این قابلیت منحصراً برای مدیریت بنیاد (آقای فرید علمی) و منشی بنیاد (سرکار خانم عباسی) فعال است.'
+            ]);
+            exit();
+        }
+
+        $donation_id = (int)($_POST['donation_id'] ?? 0);
+        $target_donor_id = (int)($_POST['target_donor_id'] ?? 0);
+        $payer_name = trim($_POST['payer_name'] ?? '');
+        $reassign_reason = trim($_POST['reassign_reason'] ?? '');
+
+        if ($donation_id <= 0 || $target_donor_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'شناسه سند واریزی و نیکوکار مقصد نامعتبر است.']);
+            exit();
+        }
+
+        $d_stmt = $pdo->prepare("SELECT d.*, dn.name as old_name, dn.surname as old_surname FROM donations d LEFT JOIN donors dn ON d.donor_id = dn.id WHERE d.id = ?");
+        $d_stmt->execute([$donation_id]);
+        $donation = $d_stmt->fetch();
+        if (!$donation) {
+            echo json_encode(['success' => false, 'message' => 'سند واریزی مورد نظر یافت نشد.']);
+            exit();
+        }
+
+        $t_stmt = $pdo->prepare("SELECT id, name, surname FROM donors WHERE id = ?");
+        $t_stmt->execute([$target_donor_id]);
+        $target_donor = $t_stmt->fetch();
+        if (!$target_donor) {
+            echo json_encode(['success' => false, 'message' => 'نیکوکار مقصد یافت نشد.']);
+            exit();
+        }
+
+        $old_fullname = trim(($donation['old_name'] ?? '') . ' ' . ($donation['old_surname'] ?? '')) ?: "پرونده #{$donation['donor_id']}";
+        $new_fullname = trim($target_donor['name'] . ' ' . $target_donor['surname']);
+
+        $current_desc = $donation['description'] ?? '';
+        $note = "[انتقال واریزی از طرف: " . ($payer_name ?: $old_fullname) . " به حساب: {$new_fullname}";
+        if (!empty($reassign_reason)) {
+            $note .= " | علت: {$reassign_reason}";
+        }
+        $note .= " | اقدام: " . ($_SESSION['user_name'] ?? 'مدیریت') . "]";
+        $updated_desc = trim($current_desc . ' ' . $note);
+
+        $up_stmt = $pdo->prepare("UPDATE donations SET donor_id = ?, description = ? WHERE id = ?");
+        $success = $up_stmt->execute([$target_donor_id, $updated_desc, $donation_id]);
+
+        if ($success) {
+            log_activity(
+                'انتقال واریزی بین نیکوکاران', 
+                'donation', 
+                $donation_id, 
+                "انتقال سند واریزی #{$donation_id} (مبلغ: " . number_format($donation['amount']) . " ریال) از «{$old_fullname}» به «{$new_fullname}»" . ($payer_name ? " (واریزکننده اصلی: {$payer_name})" : "")
+            );
+            echo json_encode([
+                'success' => true,
+                'message' => "واریزی با موفقیت به حساب نیکوکار «{$new_fullname}» منظور گردید.",
+                'new_donor_name' => $new_fullname,
+                'new_donor_id' => $target_donor_id
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'خطا در ثبت تغییرات در پایگاه داده.']);
+        }
+        exit();
 
     case 'delete_donation':
         $id = (int)$_POST['id'];
