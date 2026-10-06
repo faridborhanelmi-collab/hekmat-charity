@@ -13,6 +13,7 @@ if ($user_name === 'فرید علمی (مدیرعامل)' || $user_name === 'ف�
 $is_admin = $_SESSION['is_admin'] ?? false;
 $role = $_SESSION['role'] ?? '';
 $related_id = $_SESSION['related_id'] ?? 0;
+$is_on_student_dashboard = (basename($_SERVER['PHP_SELF'] ?? '') === 'student-dashboard.php');
 ?>
 
 <nav class="fixed top-0 w-full z-[100] bg-white/85 backdrop-blur-xl border-b border-gray-100 shadow-sm">
@@ -40,7 +41,7 @@ $related_id = $_SESSION['related_id'] ?? 0;
         <!-- Desktop Action Links (Icon Buttons with Tooltips) -->
         <div class="hidden lg:flex items-center gap-2 text-sm font-bold text-gray-600">
             <?php if ($role === 'data_operator' || (function_exists('is_viana') && is_viana())): ?>
-                <a href="<?php echo $base_url; ?>admin/library.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 shadow-sm hover:scale-105 transition-all" title="بانک کتاب و امانات (۲۰۱ جلد)">
+                <a href="<?php echo $is_on_student_dashboard ? ($base_url . 'student-dashboard.php?tab=books' . (!empty($_GET['student_id']) ? '&student_id=' . (int)$_GET['student_id'] : '')) : ($base_url . 'admin/library.php'); ?>" <?php if ($is_on_student_dashboard) echo 'onclick="if(typeof changeTab===\'function\'){changeTab(\'books\');return false;}"'; ?> class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 shadow-sm hover:scale-105 transition-all" title="بانک کتاب و امانات (۲۰۱ جلد)">
                     <span>📚</span>
                     <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">بانک کتاب و امانات</span>
                 </a>
@@ -56,7 +57,7 @@ $related_id = $_SESSION['related_id'] ?? 0;
                 </a>
                 
                 <!-- بانک کتاب و امانات -->
-                <a href="<?php echo $base_url; ?>admin/library.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 shadow-sm hover:scale-105 transition-all" title="بانک کتاب و امانات">
+                <a href="<?php echo $is_on_student_dashboard ? ($base_url . 'student-dashboard.php?tab=books' . (!empty($_GET['student_id']) ? '&student_id=' . (int)$_GET['student_id'] : '')) : ($base_url . 'admin/library.php'); ?>" <?php if ($is_on_student_dashboard) echo 'onclick="if(typeof changeTab===\'function\'){changeTab(\'books\');return false;}"'; ?> class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 shadow-sm hover:scale-105 transition-all" title="بانک کتاب و امانات">
                     <span>📚</span>
                     <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">بانک کتاب و امانات</span>
                 </a>
@@ -84,6 +85,10 @@ $related_id = $_SESSION['related_id'] ?? 0;
                 <a href="<?php echo $base_url; ?>student-dashboard.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 shadow-sm hover:scale-105 transition-all" title="داشبورد من">
                     <span>🎓</span>
                     <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">داشبورد من</span>
+                </a>
+                <a href="<?php echo $base_url; ?>student-dashboard.php?tab=books" <?php if ($is_on_student_dashboard) echo 'onclick="if(typeof changeTab===\'function\'){changeTab(\'books\');return false;}"'; ?> class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 shadow-sm hover:scale-105 transition-all" title="بانک کتاب و امانات (۲۰۱ جلد)">
+                    <span>📚</span>
+                    <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">بانک کتاب و امانات</span>
                 </a>
             <?php elseif ($role === 'benefactor'): ?>
                 <a href="<?php echo $base_url; ?>donor-dashboard.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 shadow-sm hover:scale-105 transition-all" title="پورتال پشتیبان">
@@ -152,7 +157,7 @@ $related_id = $_SESSION['related_id'] ?? 0;
                 <a href="<?php echo $base_url; ?>admin/index.php" class="flex items-center gap-3 p-3 hover:bg-teal-50 text-teal-700 rounded-xl transition-colors bg-teal-50/50">
                     <span class="text-xl">🎛️</span> داشبورد کلان مدیریت
                 </a>
-                <a href="<?php echo $base_url; ?>admin/library.php" class="flex items-center gap-3 p-3 hover:bg-amber-50 text-amber-800 rounded-xl transition-colors bg-amber-50/50 font-bold">
+                <a href="<?php echo $is_on_student_dashboard ? ($base_url . 'student-dashboard.php?tab=books' . (!empty($_GET['student_id']) ? '&student_id=' . (int)$_GET['student_id'] : '')) : ($base_url . 'admin/library.php'); ?>" <?php if ($is_on_student_dashboard) echo 'onclick="if(typeof changeTab===\'function\'){changeTab(\'books\');const cm=document.getElementById(\'close-dashboard-menu\');if(cm)cm.click();return false;}"'; ?> class="flex items-center gap-3 p-3 hover:bg-amber-50 text-amber-800 rounded-xl transition-colors bg-amber-50/50 font-bold">
                     <span class="text-xl">📚</span> بانک کتاب و امانات
                 </a>
                 <a href="<?php echo $base_url; ?>student-dashboard.php" class="flex items-center gap-3 p-3 hover:bg-indigo-50 text-indigo-700 rounded-xl transition-colors">
@@ -200,7 +205,7 @@ $related_id = $_SESSION['related_id'] ?? 0;
                 <a href="<?php echo $base_url; ?>student-dashboard.php" class="flex items-center gap-3 p-3 hover:bg-blue-50 text-blue-700 rounded-xl transition-colors bg-blue-50/50">
                     <span class="text-xl">🎓</span> داشبورد من
                 </a>
-                <a href="<?php echo $base_url; ?>student-dashboard.php?tab=books" class="flex items-center gap-3 p-3 hover:bg-teal-50 text-teal-700 rounded-xl transition-colors font-bold">
+                <a href="<?php echo $base_url; ?>student-dashboard.php?tab=books" <?php if ($is_on_student_dashboard) echo 'onclick="if(typeof changeTab===\'function\'){changeTab(\'books\');const cm=document.getElementById(\'close-dashboard-menu\');if(cm)cm.click();return false;}"'; ?> class="flex items-center gap-3 p-3 hover:bg-teal-50 text-teal-700 rounded-xl transition-colors font-bold">
                     <span class="text-xl">📚</span> بانک کتاب و امانات (۲۰۱ جلد)
                 </a>
                 <?php if (function_exists('is_viana') && is_viana()): ?>

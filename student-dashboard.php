@@ -552,25 +552,7 @@ if (isset($_GET['logout'])) {
             </div>
         <?php endif; ?>
 
-        <?php if ($student_id === 745 || $is_operator_viana || (strtolower($_SESSION['username'] ?? '') === 'viana') || (($_SESSION['related_id'] ?? 0) === 745)): ?>
-            <div class="max-w-6xl mx-auto mb-6 p-4 md:p-5 rounded-3xl bg-gradient-to-r from-teal-950/70 via-slate-900/80 to-teal-900/70 border border-teal-500/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl backdrop-blur-xl">
-                <div class="flex items-center gap-3.5 text-right">
-                    <div class="w-12 h-12 rounded-2xl bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center justify-center text-2xl shrink-0 shadow-inner">
-                        🏛️
-                    </div>
-                    <div>
-                        <div class="text-sm font-black text-white flex items-center gap-2">
-                            <span>میز کار اپراتور کتابخانه بنیاد حکمت</span>
-                            <span class="bg-teal-500/20 text-teal-300 text-[10px] px-2 py-0.5 rounded-full font-bold border border-teal-500/30">دسترسی سازمانی ویانا وحیدی</span>
-                        </div>
-                        <div class="text-xs text-slate-300 mt-0.5">مشاهده مخزن ۲۰۱ جلد کتاب، امانات فیزیکی جاری و صف‌های انتظار با سامانه پیامکی خودکار</div>
-                    </div>
-                </div>
-                <a href="switch-role.php?target=operator" class="shrink-0 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white font-black px-5 py-3 rounded-2xl text-xs shadow-lg shadow-teal-500/25 transition-all flex items-center gap-2 hover:scale-[1.02]">
-                    <span>💻</span> ورود به پنل مدیریت کتابخانه و صف انتظار ←
-                </a>
-            </div>
-        <?php endif; ?>
+
 
         <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
             
@@ -670,11 +652,6 @@ if (isset($_GET['logout'])) {
                             <button onclick="changeTab('books')" class="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white font-bold px-5 py-3 rounded-2xl text-xs shadow-lg shadow-teal-500/25 transition-all flex items-center gap-2">
                                 <span>📖</span> مشاهده فهرست کتب و امانت ←
                             </button>
-                            <?php if ($student_id === 745 || $is_operator_viana): ?>
-                                <a href="switch-role.php?target=operator" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-3 rounded-2xl text-xs shadow-md transition-all flex items-center gap-1.5">
-                                    <span>🏛️</span> پنل اپراتور کتابخانه
-                                </a>
-                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -1030,33 +1007,10 @@ if (isset($_GET['logout'])) {
                                 </p>
                             </div>
                             <button onclick="document.getElementById('new-book-modal').classList.remove('hidden')" class="bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-400 hover:to-teal-600 text-white font-black px-6 py-3.5 rounded-2xl shadow-xl transition-all text-xs flex items-center gap-2 shrink-0">
-                                <span>+</span> ثبت درخواست کتاب جدید (خرید)
+                                <span>+</span> سفارش خرید کتاب خارج از مخزن
                             </button>
                         </div>
                     </div>
-
-                                        <?php if ($is_operator_viana): ?>
-                    <!-- Operator Quick Workbench Switcher -->
-                    <div class="glass-panel p-6 rounded-[2.5rem] border border-teal-500/40 bg-gradient-to-r from-teal-950/70 via-slate-900/80 to-slate-900/90 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div class="flex items-center gap-4 text-right">
-                            <div class="w-12 h-12 rounded-2xl bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center justify-center text-2xl shrink-0 shadow-inner">
-                                💻
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-black text-white">میز کار اپراتور دیتابیس کتابخانه (ویانا وحیدی)</span>
-                                    <span class="bg-teal-500/25 text-teal-300 border border-teal-500/40 text-[10px] px-2.5 py-0.5 rounded-full font-black">پنل مدیریتی فعال</span>
-                                </div>
-                                <p class="text-xs text-slate-300 mt-1">مدیریت امانات، تایید تحویل و ثبت عودت، مشاهده صف‌های انتظار و ارسال پیامک خودکار اطلاع‌رسانی</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <a href="admin/library.php" class="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white font-black px-5 py-3 rounded-2xl text-xs shadow-lg shadow-teal-500/25 transition-all flex items-center gap-2">
-                                <span>🎛️</span> ورود به میز کار اپراتور کتابخانه ←
-                            </a>
-                        </div>
-                    </div>
-                    <?php endif; ?>
 
 <!-- 2. Foundation Library Catalog (Search & Loan Request) -->
                     <div class="glass-panel rounded-[2.5rem] p-8 border border-white/5 space-y-6">
@@ -1544,7 +1498,7 @@ if (isset($_GET['logout'])) {
 
     <!-- JS Handling Tabs and Simulated AI Tutor -->
     <script>
-        function changeTab(tabName) {
+        function changeTab(tabName, shouldScroll = true) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             // Remove active style from all buttons
@@ -1554,11 +1508,27 @@ if (isset($_GET['logout'])) {
             });
 
             // Show active tab
-            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            const targetTab = document.getElementById('tab-' + tabName);
+            if (targetTab) {
+                targetTab.classList.remove('hidden');
+                if (shouldScroll) {
+                    targetTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
             // Add active style to active button
             const activeBtn = document.getElementById('btn-' + tabName);
-            activeBtn.classList.add('active', 'bg-teal-600', 'text-white');
-            activeBtn.classList.remove('text-slate-400');
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'bg-teal-600', 'text-white');
+                activeBtn.classList.remove('text-slate-400');
+            }
+
+            // Update browser URL query parameter without full reload
+            if (window.history && window.history.replaceState) {
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('tab', tabName);
+                window.history.replaceState({}, '', currentUrl.toString());
+            }
         }
 
         function toggleUploadModal(show) {
@@ -1570,7 +1540,7 @@ if (isset($_GET['logout'])) {
         document.addEventListener('DOMContentLoaded', function() {
             const initTab = '<?php echo $default_active_tab; ?>';
             if (initTab && initTab !== 'dashboard') {
-                changeTab(initTab);
+                changeTab(initTab, false);
             }
         });
 

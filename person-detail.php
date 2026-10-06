@@ -726,9 +726,15 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <span class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl shadow-sm">📚</span>
                         درخواست‌های کتاب و ملزومات تحصیلی
                     </h3>
-                    <a href="admin/library.php" class="text-xs font-bold bg-teal-600 text-white px-4 py-2 rounded-xl hover:bg-teal-700 transition-colors">
-                        بانک جامع کتاب و امانات ←
-                    </a>
+                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
+                        <a href="student-dashboard.php?tab=books" class="text-xs font-bold bg-teal-600 text-white px-4 py-2 rounded-xl hover:bg-teal-700 transition-colors">
+                            بانک جامع کتاب و امانات ←
+                        </a>
+                    <?php else: ?>
+                        <a href="student-dashboard.php?student_id=<?php echo $id; ?>&tab=books" class="text-xs font-bold bg-teal-600 text-white px-4 py-2 rounded-xl hover:bg-teal-700 transition-colors">
+                            بانک جامع کتاب و امانات دانش‌آموز ←
+                        </a>
+                    <?php endif; ?>
                 </div>
 
                 <?php if (empty($student_books)): ?>
