@@ -558,10 +558,10 @@ if (isset($_GET['logout'])) {
             
             <!-- Side Navigation Menu -->
             <aside class="w-full lg:w-64 flex flex-row lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 shrink-0">
-                <button onclick="changeTab('dashboard')" id="btn-dashboard" class="tab-btn active w-full px-5 py-4 rounded-2xl font-black text-right text-sm transition-all flex items-center gap-3">
+                <button onclick="changeTab('dashboard')" id="btn-dashboard" class="tab-btn <?php echo $default_active_tab === 'dashboard' ? 'active bg-teal-600 text-white' : 'text-slate-400 hover:bg-white/5'; ?> w-full px-5 py-4 rounded-2xl font-black text-right text-sm transition-all flex items-center gap-3">
                     <span>🏠</span> داشبورد من
                 </button>
-                <button onclick="changeTab('books')" id="btn-books" class="tab-btn w-full px-5 py-4 rounded-2xl font-black text-right text-sm text-slate-400 hover:bg-white/5 transition-all flex items-center justify-between">
+                <button onclick="changeTab('books')" id="btn-books" class="tab-btn <?php echo $default_active_tab === 'books' ? 'active bg-teal-600 text-white' : 'text-slate-400 hover:bg-white/5'; ?> w-full px-5 py-4 rounded-2xl font-black text-right text-sm transition-all flex items-center justify-between">
                     <span class="flex items-center gap-3">
                         <span>📚</span> کتاب‌ها و نیازهای درسی
                     </span>
@@ -569,19 +569,19 @@ if (isset($_GET['logout'])) {
                         <span class="bg-teal-500/20 text-teal-300 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold"><?php echo count($book_requests); ?></span>
                     <?php endif; ?>
                 </button>
-                <button onclick="changeTab('courses')" id="btn-courses" class="tab-btn w-full px-5 py-4 rounded-2xl font-black text-right text-sm text-slate-400 hover:bg-white/5 transition-all flex items-center gap-3">
+                <button onclick="changeTab('courses')" id="btn-courses" class="tab-btn <?php echo $default_active_tab === 'courses' ? 'active bg-teal-600 text-white' : 'text-slate-400 hover:bg-white/5'; ?> w-full px-5 py-4 rounded-2xl font-black text-right text-sm transition-all flex items-center gap-3">
                     <span>💻</span> کلاس‌ها و ویدیوها
                 </button>
-                <button onclick="changeTab('reports')" id="btn-reports" class="tab-btn w-full px-5 py-4 rounded-2xl font-black text-right text-sm text-slate-400 hover:bg-white/5 transition-all flex items-center gap-3">
+                <button onclick="changeTab('reports')" id="btn-reports" class="tab-btn <?php echo $default_active_tab === 'reports' ? 'active bg-teal-600 text-white' : 'text-slate-400 hover:bg-white/5'; ?> w-full px-5 py-4 rounded-2xl font-black text-right text-sm transition-all flex items-center gap-3">
                     <span>📊</span> کارنامه‌ها و مدارک
                 </button>
-                <button onclick="changeTab('mentorship')" id="btn-mentorship" class="tab-btn w-full px-5 py-4 rounded-2xl font-black text-right text-sm text-slate-400 hover:bg-white/5 transition-all flex items-center gap-3 relative">
+                <button onclick="changeTab('mentorship')" id="btn-mentorship" class="tab-btn <?php echo $default_active_tab === 'mentorship' ? 'active bg-teal-600 text-white' : 'text-slate-400 hover:bg-white/5'; ?> w-full px-5 py-4 rounded-2xl font-black text-right text-sm transition-all flex items-center gap-3 relative">
                     <span>🤝</span> ارتباط با منتور
                     <?php if ($active_spon): ?>
                         <span class="absolute left-4 w-2 h-2 bg-teal-500 rounded-full animate-ping"></span>
                     <?php endif; ?>
                 </button>
-                <button onclick="changeTab('ai-tutor')" id="btn-ai-tutor" class="tab-btn w-full px-5 py-4 rounded-2xl font-black text-right text-sm text-slate-400 hover:bg-white/5 transition-all flex items-center gap-3">
+                <button onclick="changeTab('ai-tutor')" id="btn-ai-tutor" class="tab-btn <?php echo $default_active_tab === 'ai-tutor' ? 'active bg-teal-600 text-white' : 'text-slate-400 hover:bg-white/5'; ?> w-full px-5 py-4 rounded-2xl font-black text-right text-sm transition-all flex items-center gap-3">
                     <span>🤖</span> دستیار علمی هوش مصنوعی
                 </button>
             </aside>
@@ -590,7 +590,7 @@ if (isset($_GET['logout'])) {
             <div class="flex-1 min-w-0">
                 
                 <!-- 1. DASHBOARD TAB -->
-                <div id="tab-dashboard" class="tab-content space-y-8">
+                <div id="tab-dashboard" class="tab-content <?php echo $default_active_tab === 'dashboard' ? '' : 'hidden'; ?> space-y-8 scroll-mt-24">
                     <!-- Profile Intro Hero -->
                     <div class="glass-panel rounded-[3rem] p-8 lg:p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-8 shadow-2xl">
                         <div class="absolute -right-20 -top-20 w-80 h-80 bg-teal-500/5 rounded-full blur-3xl"></div>
@@ -989,8 +989,11 @@ if (isset($_GET['logout'])) {
                                 class="flex-1 bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 transition-all">
                             <button onclick="submitAICustom()" class="bg-teal-600 hover:bg-teal-500 text-white font-bold px-6 rounded-xl text-xs transition-all shadow-md">ارسال</button>
                         </div>
+                    </div>
+                </div>
+
                 <!-- 6. BOOKS & EDUCATIONAL NEEDS TAB -->
-                <div id="tab-books" class="tab-content hidden space-y-8">
+                <div id="tab-books" class="tab-content <?php echo $default_active_tab === 'books' ? '' : 'hidden'; ?> space-y-8 scroll-mt-24">
                     
                     <!-- Header Card -->
                     <div class="glass-panel rounded-[2.5rem] p-8 lg:p-10 border border-teal-500/20 relative overflow-hidden shadow-xl">
@@ -1512,7 +1515,9 @@ if (isset($_GET['logout'])) {
             if (targetTab) {
                 targetTab.classList.remove('hidden');
                 if (shouldScroll) {
-                    targetTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const navHeight = 90;
+                    const y = targetTab.getBoundingClientRect().top + window.pageYOffset - navHeight;
+                    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
                 }
             }
 
