@@ -1,3 +1,5 @@
 <?php
 // ارجاع مستقیم به صفحه پرونده و کارنامه تحلیلی روانسنجی
-require_once __DIR__ . '/../interview-dossier.php';
+$qs = !empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '';
+header("Location: /interview-dossier.php" . $qs, true, 301);
+exit();

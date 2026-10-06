@@ -170,7 +170,7 @@ $is_private_page = true;
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
                 <div class="flex items-center gap-2 text-xs text-gray-400 mb-2">
-                    <a href="people-list.php" class="hover:text-teal-400 transition">داشبورد مدیریت</a>
+                    <a href="/admin/index.php" class="hover:text-teal-400 transition">داشبورد مدیریت</a>
                     <span>/</span>
                     <span class="text-teal-400 font-bold">سامانه آزمون‌های روانسنجی و مصاحبه</span>
                 </div>
@@ -185,22 +185,22 @@ $is_private_page = true;
             
             <!-- Quick Demo Buttons -->
             <div class="flex flex-wrap items-center gap-2">
-                <a href="interview-test.php?demo=1&test=gardner_mit" target="_blank"
+                <a href="/interview-test.php?demo=1&test=gardner_mit" target="_blank"
                    class="px-3 py-2 bg-gray-900 hover:bg-gray-800 border border-teal-500/30 text-teal-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
                     <span>🧠</span>
                     <span>پیش‌نمایش گاردنر (۸۰ س)</span>
                 </a>
-                <a href="interview-test.php?demo=1&test=emotional_seiq" target="_blank"
+                <a href="/interview-test.php?demo=1&test=emotional_seiq" target="_blank"
                    class="px-3 py-2 bg-gray-900 hover:bg-gray-800 border border-teal-500/30 text-teal-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
                     <span>❤️</span>
                     <span>پیش‌نمایش هوش هیجانی (۳۳ س)</span>
                 </a>
-                <a href="interview-test.php?demo=1&test=scl90_mental" target="_blank"
+                <a href="/interview-test.php?demo=1&test=scl90_mental" target="_blank"
                    class="px-3 py-2 bg-gray-900 hover:bg-gray-800 border border-teal-500/30 text-teal-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
                     <span>🛡️</span>
                     <span>پیش‌نمایش سلامت روان (۹۰ س)</span>
                 </a>
-                <a href="interview-test.php?demo=1&test=hermans_amq" target="_blank"
+                <a href="/interview-test.php?demo=1&test=hermans_amq" target="_blank"
                    class="px-3 py-2 bg-gray-900 hover:bg-gray-800 border border-teal-500/30 text-teal-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
                     <span>🚀</span>
                     <span>پیش‌نمایش انگیزه پیشرفت (۲۹ س)</span>
@@ -389,7 +389,7 @@ $is_private_page = true;
                                             📊 کارنامه
                                         </button>
                                         <!-- Full Dossier & Radar Chart Link -->
-                                        <a href="interview-dossier.php?token=<?php echo urlencode($t['token']); ?>" target="_blank"
+                                        <a href="/interview-dossier.php?token=<?php echo urlencode($t['token']); ?>" target="_blank"
                                            title="مشاهده پرونده تحلیلی تفصیلی و رادار چارت (آماده پرینت A4)"
                                            class="px-2.5 py-1.5 bg-teal-950/80 hover:bg-teal-900 border border-teal-500/40 text-teal-300 font-bold rounded-lg text-xs shadow transition flex items-center gap-1">
                                             📋 پرونده

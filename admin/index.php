@@ -422,11 +422,11 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                         </div>
                     </div>
                     <div class="flex flex-col sm:flex-row items-center gap-3 relative z-10 w-full md:w-auto justify-end flex-shrink-0">
-                        <a href="interview-tests.php" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-xl shadow-teal-500/30 flex items-center justify-center gap-2">
+                        <a href="/admin-interview-tests.php" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-xl shadow-teal-500/30 flex items-center justify-center gap-2">
                             <span>ورود به سامانه و صدور لینک آزمون</span>
                             <span>←</span>
                         </a>
-                        <a href="../interview-test.php?demo=1" target="_blank" class="w-full sm:w-auto px-4 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5">
+                        <a href="/interview-test.php?demo=1" target="_blank" class="w-full sm:w-auto px-4 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5">
                             <span>پیش‌نمایش آزمون</span>
                             <span>👁️</span>
                         </a>
@@ -877,7 +877,7 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                                             <div class="flex items-center gap-2">
                                                 <span class="text-sm"><?php echo $ub['type'] === 'student' ? '👧' : '💎'; ?></span>
                                                 <div>
-                                                    <a href="<?php echo $ub['type'] === 'student' ? 'person-detail.php?id=' . $ub['id'] : 'donor-detail.php?id=' . $ub['id']; ?>" class="text-xs font-black text-primary-900 hover:text-teal-600 hover:underline block">
+                                                    <a href="<?php echo $ub['type'] === 'student' ? '/person-detail.php?id=' . $ub['id'] : '/donor-detail.php?id=' . $ub['id']; ?>" class="text-xs font-black text-primary-900 hover:text-teal-600 hover:underline block">
                                                         <?php echo htmlspecialchars($ub['name'] . ' ' . $ub['surname']); ?>
                                                     </a>
                                                     <span class="text-[9px] text-gray-400 font-bold"><?php echo toFarsiDigits($ub['day']) . ' ' . $ub['month_name']; ?></span>
