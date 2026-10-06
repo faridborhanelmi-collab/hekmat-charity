@@ -572,7 +572,15 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <h3 class="text-xl md:text-2xl font-black text-white">پروفایل جامع روانشناختی و استعدادیابی</h3>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a href="interview-dossier.php?student_id=<?php echo $person['id']; ?>" target="_blank" class="text-xs text-white bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 px-4 py-2 rounded-2xl border border-teal-400/30 transition flex items-center gap-1.5 font-bold shadow-lg shadow-teal-500/20">
+                            <span>📋</span>
+                            <span>پرونده تحلیلی و رادار چارت (A4)</span>
+                        </a>
+                        <a href="admin-interview-tests.php" class="text-xs text-teal-300 hover:text-white bg-teal-500/20 hover:bg-teal-500/40 px-3.5 py-2 rounded-2xl border border-teal-500/30 transition flex items-center gap-1.5 font-bold shadow-sm">
+                            <span>📱</span>
+                            <span>سامانه آزمون مصاحبه</span>
+                        </a>
                         <span class="text-xs text-teal-300 font-bold bg-white/5 px-4 py-2 rounded-2xl border border-white/10">
                             گرید نهایی ارزیابی: <strong class="text-white text-base mr-1"><?php echo htmlspecialchars((string)($psychology['final_grade'] ?: '---')); ?></strong>
                         </span>

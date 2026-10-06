@@ -76,16 +76,30 @@ if (!preg_match('/^09[0-9]{9}$/', $phone)) {
     exit;
 }
 
-// Check for single-attempt constraint (One attempt per National ID)
-$dup_check = $pdo->prepare("SELECT id, score, total_questions, tier, created_at FROM diamond_candidates WHERE national_id = ?");
-$dup_check->execute([$national_id]);
+// Check for single-attempt constraint (One attempt per National ID or Phone)
+$dup_check = $pdo->prepare("
+    SELECT id, full_name, national_id, phone, score, total_questions, tier, created_at 
+    FROM diamond_candidates 
+    WHERE national_id = ? OR phone = ? OR phone LIKE ? 
+    ORDER BY id DESC LIMIT 1
+");
+$dup_check->execute([$national_id, $phone, '%' . substr($phone, -10)]);
 $previous_attempt = $dup_check->fetch(PDO::FETCH_ASSOC);
 
 if ($previous_attempt) {
+    $matched_field = (!empty($previous_attempt['national_id']) && $previous_attempt['national_id'] === $national_id) 
+        ? "کد ملی ({$national_id})" 
+        : "شماره همراه ({$phone})";
+    $date_fa = formatJalaliDateTime($previous_attempt['created_at']);
+    $cand_name = htmlspecialchars($previous_attempt['full_name']);
+    $score_val = toFarsiDigits($previous_attempt['score']);
+    $total_val = toFarsiDigits($previous_attempt['total_questions'] ?: 15);
+    $tier_label = htmlspecialchars($previous_attempt['tier'] ?: 'ثبت‌شده');
+
     echo json_encode([
         'success' => false,
         'already_participated' => true,
-        'message' => "داوطلب گرامی، شما قبلاً با کد ملی {$national_id} در آزمون پویش گنج‌های پنهان شرکت کرده‌اید (نمره ثبت‌شده شما: {$previous_attempt['score']} از {$previous_attempt['total_questions']} - سطح: {$previous_attempt['tier']}). هر شخص فقط یک‌بار مجاز به شرکت است."
+        'message' => "داوطلب گرامی {$cand_name}؛ شما قبلاً در تاریخ {$date_fa} با این {$matched_field} در آزمون پویش گنج‌های پنهان شرکت کرده‌اید (نمره ثبت‌شده شما: {$score_val} از {$total_val} - سطح: «{$tier_label}»). طبق ضوابط بنیاد حکمت، هر شخص فقط یک‌بار مجاز به شرکت در چالش است."
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

@@ -14,6 +14,24 @@ $is_read_only = is_read_only();
 $current_user = auth_user();
 $current_user_id = $current_user['id'] ?? null;
 
+// Auto-ensure library tables exist to prevent any 500 errors
+$pdo->exec("
+    CREATE TABLE IF NOT EXISTS book_waitlist (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_id INTEGER NOT NULL,
+        student_id INTEGER NOT NULL,
+        status TEXT DEFAULT 'waiting',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        notified_at DATETIME NULL,
+        admin_notes TEXT NULL,
+        FOREIGN KEY (book_id) REFERENCES library_books(id),
+        FOREIGN KEY (student_id) REFERENCES students(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_bw_book ON book_waitlist(book_id);
+    CREATE INDEX IF NOT EXISTS idx_bw_student ON book_waitlist(student_id);
+    CREATE INDEX IF NOT EXISTS idx_bw_status ON book_waitlist(status);
+");
+
 // Handle Actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($is_read_only) {

@@ -11,3 +11,5 @@ php_server_log.txt
 database.sqlite
 uploads/docs/
 .github/
+update_returns_and_kpi.py
+update_table_badges.py

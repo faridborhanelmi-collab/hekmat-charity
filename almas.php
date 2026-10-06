@@ -258,8 +258,20 @@ $page_desc = 'پویش کشف نخبگان و گنج‌های پنهان سرا�
                         </span>
                     </div>
 
-                    <button type="submit" class="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white rounded-xl font-black text-lg shadow-lg transition-all transform hover:-translate-y-0.5">
-                        شروع چالش ۱۵ دقیقه‌ای 💎
+                    <!-- Already Participated Warning Alert (Shown if National ID / Phone already exists) -->
+                    <div id="already-participated-card" class="hidden p-5 rounded-2xl bg-rose-500/20 border-2 border-rose-500/50 text-rose-200 text-sm leading-relaxed shadow-xl animate-pulse">
+                        <div class="flex items-center gap-2.5 text-rose-300 font-black text-base mb-2">
+                            <span class="text-xl">⛔</span>
+                            <span>عدم امکان شرکت مجدد در آزمون</span>
+                        </div>
+                        <p id="already-participated-text" class="leading-relaxed font-bold text-justify"></p>
+                        <div class="mt-3 pt-3 border-t border-rose-500/30 text-xs text-rose-300">
+                            طبق آیین‌نامه پویش کشف گنج‌های پنهان بنیاد حکمت، هر داوطلب صرفاً ۱ بار مجاز به شرکت در چالش است.
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-start-quiz" class="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white rounded-xl font-black text-lg shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span id="btn-start-quiz-text">شروع چالش ۱۵ دقیقه‌ای 💎</span>
                     </button>
                 </form>
             </div>
@@ -624,7 +636,15 @@ $page_desc = 'پویش کشف نخبگان و گنج‌های پنهان سرا�
             e.preventDefault();
 
             const natIdInput = document.getElementById('cand_national_id').value.trim();
+            const phoneInput = document.getElementById('cand_phone').value.trim();
             const errElem = document.getElementById('nat-id-error');
+            const alertCard = document.getElementById('already-participated-card');
+            const alertText = document.getElementById('already-participated-text');
+            const btnStart = document.getElementById('btn-start-quiz');
+            const btnText = document.getElementById('btn-start-quiz-text');
+
+            if (alertCard) alertCard.classList.add('hidden');
+
             if (!isValidIranianNationalCode(natIdInput)) {
                 errElem.classList.remove('hidden');
                 document.getElementById('cand_national_id').focus();
@@ -632,26 +652,129 @@ $page_desc = 'پویش کشف نخبگان و گنج‌های پنهان سرا�
             }
             errElem.classList.add('hidden');
 
-            candidateInfo = {
-                full_name: document.getElementById('cand_name').value.trim(),
-                national_id: natIdInput,
-                phone: document.getElementById('cand_phone').value.trim(),
-                grade: document.getElementById('cand_grade').value,
-                city: document.getElementById('cand_city').value.trim(),
-                school_name: document.getElementById('cand_school').value.trim()
-            };
+            // Phone format normalization and check
+            let cleanPhone = phoneInput.replace(/[^0-9۰-۹٠-٩]/g, '');
+            const pDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+            const aDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+            for (let i = 0; i < 10; i++) {
+                cleanPhone = cleanPhone.replaceAll(pDigits[i], i.toString()).replaceAll(aDigits[i], i.toString());
+            }
 
-            // Switch view
-            document.getElementById('registration-card').classList.add('hidden');
-            document.getElementById('quiz-card').classList.remove('hidden');
+            if (!/^09[0-9]{9}$/.test(cleanPhone)) {
+                alert('لطفاً شماره تلفن همراه معتبر ۱۱ رقمی (مانند ۰۹۱۲۳۴۵۶۷۸۹) وارد فرمایید.');
+                document.getElementById('cand_phone').focus();
+                return;
+            }
 
-            totalTestStartTime = Date.now();
-            currentQuestionIdx = 0;
-            loadQuestion(0);
+            // Lock button and display loading status
+            btnStart.disabled = true;
+            const originalBtnHtml = btnText.innerHTML;
+            btnText.innerHTML = `
+                <svg class="animate-spin h-5 w-5 text-white inline-block ml-2" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                در حال استعلام سابقه شرکت در آزمون...
+            `;
 
-            // Smooth scroll to top of quiz card
-            document.getElementById('test-section').scrollIntoView({ behavior: 'smooth' });
+            // Asynchronous Pre-Check with server BEFORE starting the test!
+            fetch('api-diamond-check.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    national_id: natIdInput,
+                    phone: cleanPhone
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btnStart.disabled = false;
+                btnText.innerHTML = originalBtnHtml;
+
+                if (data.already_participated) {
+                    // STOP RIGHT HERE! DO NOT START TEST!
+                    if (alertCard && alertText) {
+                        alertText.innerText = data.message;
+                        alertCard.classList.remove('hidden');
+                        alertCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        alert(data.message);
+                    }
+                    return;
+                }
+
+                if (!data.success) {
+                    alert(data.message || 'خطا در اعتبارسنجی اطلاعات. لطفاً دوباره بررسی کنید.');
+                    return;
+                }
+
+                // Candidate is eligible! Proceed to start test!
+                candidateInfo = {
+                    full_name: document.getElementById('cand_name').value.trim(),
+                    national_id: natIdInput,
+                    phone: cleanPhone,
+                    grade: document.getElementById('cand_grade').value,
+                    city: document.getElementById('cand_city').value.trim(),
+                    school_name: document.getElementById('cand_school').value.trim()
+                };
+
+                // Switch view to Quiz Card
+                document.getElementById('registration-card').classList.add('hidden');
+                document.getElementById('quiz-card').classList.remove('hidden');
+
+                totalTestStartTime = Date.now();
+                currentQuestionIdx = 0;
+                loadQuestion(0);
+
+                // Smooth scroll to top of quiz card
+                document.getElementById('test-section').scrollIntoView({ behavior: 'smooth' });
+            })
+            .catch(err => {
+                console.error(err);
+                btnStart.disabled = false;
+                btnText.innerHTML = originalBtnHtml;
+                alert('خطا در برقراری ارتباط با سرور برای بررسی صلاحیت. لطفاً اتصال اینترنت خود را بررسی و مجدداً تلاش کنید.');
+            });
         }
+
+        // Instant check when national ID or phone is blurred
+        function checkDuplicateOnBlur() {
+            const natIdInput = document.getElementById('cand_national_id').value.trim();
+            const phoneInput = document.getElementById('cand_phone').value.trim();
+            const alertCard = document.getElementById('already-participated-card');
+            const alertText = document.getElementById('already-participated-text');
+
+            if (!natIdInput && !phoneInput) return;
+            if (natIdInput && !isValidIranianNationalCode(natIdInput)) return;
+
+            fetch('api-diamond-check.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    national_id: natIdInput,
+                    phone: phoneInput
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.already_participated) {
+                    if (alertCard && alertText) {
+                        alertText.innerText = data.message;
+                        alertCard.classList.remove('hidden');
+                    }
+                } else if (alertCard) {
+                    alertCard.classList.add('hidden');
+                }
+            })
+            .catch(() => {});
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const elNat = document.getElementById('cand_national_id');
+            const elPhone = document.getElementById('cand_phone');
+            if (elNat) elNat.addEventListener('blur', checkDuplicateOnBlur);
+            if (elPhone) elPhone.addEventListener('blur', checkDuplicateOnBlur);
+        });
 
         function loadQuestion(idx) {
             if (idx >= questionsData.length) {
