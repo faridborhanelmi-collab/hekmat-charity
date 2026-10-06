@@ -131,7 +131,93 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
 @font-face{font-family:'Vazirmatn';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/fonts/Vazirmatn-500.woff2') format('woff2')}
 @font-face{font-family:'Vazirmatn';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/Vazirmatn-700.woff2') format('woff2')}
 @font-face{font-family:'Vazirmatn';font-style:normal;font-weight:900;font-display:swap;src:url('/assets/fonts/Vazirmatn-900.woff2') format('woff2')}
+
+/* Universal Responsive Portals Hub Architecture */
+.portal-hub-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    width: 100%;
+}
+@media (min-width: 1280px) {
+    .portal-hub-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.75rem;
+    }
+}
+@media (min-width: 1536px) {
+    .portal-hub-grid {
+        gap: 2rem;
+    }
+}
+
+.portal-action-card {
+    container-type: inline-size;
+    container-name: portalCard;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.portal-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.portal-select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    box-sizing: border-box;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: left 1rem center;
+    background-size: 1em;
+    padding-left: 2.75rem !important;
+}
+
+.portal-select option {
+    background-color: #0f172a;
+    color: #ffffff;
+    font-size: 13px;
+    padding: 8px 12px;
+}
+
+.portal-submit-btn {
+    width: 100%;
+    white-space: nowrap;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+@container portalCard (min-width: 420px) {
+    .portal-control-group {
+        flex-direction: row;
+        align-items: center;
+    }
+    .portal-control-group select.portal-select {
+        flex: 1 1 0%;
+        min-width: 0;
+        width: 0;
+    }
+    .portal-control-group .portal-submit-btn {
+        width: auto !important;
+        flex-shrink: 0;
+    }
+}
 </style>
+
 <link rel="stylesheet" href="/assets/tailwind.min.css">
 <script>
         tailwind.config = {
@@ -158,11 +244,11 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
     $base_url = '../';
     include '../includes/dashboard-nav.php'; 
     ?>
-    <main class="container mx-auto px-6 py-12">
-        <div class="flex flex-col lg:flex-row gap-8">
+    <main class="container mx-auto px-4 sm:px-6 py-6 sm:py-12">
+        <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
             
             <!-- Main Dashboard Area -->
-            <div class="flex-1 space-y-8">
+            <div class="flex-1 min-w-0 space-y-6 sm:space-y-8">
                 
                 <?php 
                 $cur_username = strtolower($_SESSION['username'] ?? '');
@@ -406,8 +492,8 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                 </div>
 
                 <!-- Live Portals Access Hub (Admin / Supervisor View) -->
-                <div class="bg-white rounded-[3rem] p-8 md:p-10 shadow-xl border border-gray-100">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 pb-6 border-b border-gray-100">
+                <div class="bg-white rounded-3xl md:rounded-[3rem] p-6 sm:p-8 md:p-10 shadow-xl border border-gray-100">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 sm:mb-8 pb-6 border-b border-gray-100">
                         <div>
                             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black mb-2 border border-indigo-100">
                                 <span>🌐</span>
@@ -421,31 +507,31 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                                 دسترسی مستقیم و بدون واسطه به پرتال اختصاصی هر یک از دانش‌آموزان و خیرین، دقیقاً از دید خود کاربر
                             </p>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <a href="sponsorships.php" class="px-5 py-2.5 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-xs font-black rounded-2xl transition-all flex items-center gap-2 shadow-sm">
+                        <div class="flex items-center gap-3 w-full md:w-auto">
+                            <a href="sponsorships.php" class="w-full md:w-auto px-5 py-2.5 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2 shadow-sm">
                                 <span>🤝</span>
                                 <span>مدیریت پیوند بورس‌ها (<?php echo toFarsiDigits($total_sponsorships_count); ?> فعال)</span>
                             </a>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="portal-hub-grid">
                         
                         <!-- CARD 1: STUDENT PORTAL -->
-                        <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-[2.5rem] p-8 shadow-xl border border-indigo-500/30 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="portal-action-card bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl md:rounded-[2.5rem] p-6 sm:p-7 md:p-8 shadow-xl border border-indigo-500/30 flex flex-col justify-between relative overflow-hidden group">
                             <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
                             <div>
-                                <div class="flex items-center justify-between mb-4">
+                                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-2xl shadow-inner">
+                                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
                                             🎒
                                         </div>
                                         <div>
-                                            <h4 class="text-lg font-black text-white">پورتال اختصاصی دانش‌آموزان</h4>
-                                            <span class="text-[10px] text-indigo-300 font-bold">دید اختصاصی دانش‌آموز (کارنامه‌ها، کتاب‌ها، گزارش رشد)</span>
+                                            <h4 class="text-base sm:text-lg font-black text-white">پورتال اختصاصی دانش‌آموزان</h4>
+                                            <span class="text-[10px] text-indigo-300 font-bold block">دید اختصاصی دانش‌آموز (کارنامه‌ها، کتاب‌ها، گزارش رشد)</span>
                                         </div>
                                     </div>
-                                    <span class="text-[10px] bg-indigo-500/30 text-indigo-200 px-2.5 py-1 rounded-full font-black border border-indigo-400/20">
+                                    <span class="text-[10px] bg-indigo-500/30 text-indigo-200 px-2.5 py-1 rounded-full font-black border border-indigo-400/20 shrink-0">
                                         <?php echo toFarsiDigits(count($portal_students)); ?> دانش‌آموز
                                     </span>
                                 </div>
@@ -455,8 +541,8 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                                 
                                 <div class="space-y-3">
                                     <label class="block text-[11px] font-bold text-indigo-200">انتخاب دانش‌آموز مورد نظر:</label>
-                                    <div class="flex flex-col sm:flex-row gap-2">
-                                        <select id="select_student_dashboard" class="flex-1 bg-black/40 border border-white/20 rounded-2xl px-4 py-3 text-xs text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                                    <div class="portal-control-group">
+                                        <select id="select_student_dashboard" class="portal-select bg-black/40 border border-white/20 rounded-2xl px-4 py-3 text-xs text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400">
                                             <?php
                                             $curr_group = '';
                                             $group_labels = [
@@ -479,7 +565,7 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                                             <?php endforeach; ?>
                                             <?php if ($curr_group !== '') echo '</optgroup>'; ?>
                                         </select>
-                                        <button type="button" onclick="goToStudentPortal()" class="px-5 py-3 bg-gradient-to-r from-indigo-500 to-teal-500 hover:from-indigo-600 hover:to-teal-600 text-white font-black text-xs rounded-2xl transition-all shadow-lg flex items-center justify-center gap-1.5 shrink-0">
+                                        <button type="button" onclick="goToStudentPortal()" class="portal-submit-btn px-6 py-3 bg-gradient-to-r from-indigo-500 to-teal-500 hover:from-indigo-600 hover:to-teal-600 text-white font-black text-xs rounded-2xl transition-all shadow-lg flex items-center justify-center gap-1.5 active:scale-95">
                                             <span>ورود به پرتال</span>
                                             <span>←</span>
                                         </button>
@@ -489,12 +575,12 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                             
                             <div class="pt-6 border-t border-white/10 mt-6 flex flex-wrap items-center justify-between gap-3 text-[11px] text-gray-400">
                                 <?php if (can_add_student()): ?>
-                                <a href="../people-list.php?open_modal=1" class="px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5 hover:-translate-y-0.5">
+                                <a href="../people-list.php?open_modal=1" class="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 hover:-translate-y-0.5">
                                     <span class="text-base leading-none">+</span>
                                     <span>افزودن مددجوی جدید (تکی و گروهی)</span>
                                 </a>
                                 <?php endif; ?>
-                                <a href="../people-list.php" class="text-teal-300 hover:text-white font-bold text-xs flex items-center gap-1">
+                                <a href="../people-list.php" class="text-teal-300 hover:text-white font-bold text-xs flex items-center gap-1 shrink-0 py-1">
                                     <span>لیست کامل مددجویان (<?php echo toFarsiDigits($total_students); ?>)</span>
                                     <span>←</span>
                                 </a>
@@ -502,20 +588,20 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                         </div>
 
                         <!-- CARD 2: DONOR PORTAL -->
-                        <div class="bg-gradient-to-br from-teal-950 via-slate-900 to-emerald-950 text-white rounded-[2.5rem] p-8 shadow-xl border border-teal-500/30 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="portal-action-card bg-gradient-to-br from-teal-950 via-slate-900 to-emerald-950 text-white rounded-3xl md:rounded-[2.5rem] p-6 sm:p-7 md:p-8 shadow-xl border border-teal-500/30 flex flex-col justify-between relative overflow-hidden group">
                             <div class="absolute -right-10 -top-10 w-40 h-40 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
                             <div>
-                                <div class="flex items-center justify-between mb-4">
+                                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-2xl shadow-inner">
+                                        <div class="w-12 h-12 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
                                             💎
                                         </div>
                                         <div>
-                                            <h4 class="text-lg font-black text-white">پورتال اختصاصی خیرین و حامیان</h4>
-                                            <span class="text-[10px] text-teal-300 font-bold">دید اختصاصی حامی (با حفظ کامل محرمانگی نخبگان)</span>
+                                            <h4 class="text-base sm:text-lg font-black text-white">پورتال اختصاصی خیرین و حامیان</h4>
+                                            <span class="text-[10px] text-teal-300 font-bold block">دید اختصاصی حامی (با حفظ کامل محرمانگی نخبگان)</span>
                                         </div>
                                     </div>
-                                    <span class="text-[10px] bg-teal-500/30 text-teal-200 px-2.5 py-1 rounded-full font-black border border-teal-400/20">
+                                    <span class="text-[10px] bg-teal-500/30 text-teal-200 px-2.5 py-1 rounded-full font-black border border-teal-400/20 shrink-0">
                                         <?php echo toFarsiDigits(count($portal_donors)); ?> نیکوکار
                                     </span>
                                 </div>
@@ -525,15 +611,15 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                                 
                                 <div class="space-y-3">
                                     <label class="block text-[11px] font-bold text-teal-200">انتخاب خیر / حامی بورس:</label>
-                                    <div class="flex flex-col sm:flex-row gap-2">
-                                        <select id="select_donor_dashboard" class="flex-1 bg-black/40 border border-white/20 rounded-2xl px-4 py-3 text-xs text-white font-bold focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                    <div class="portal-control-group">
+                                        <select id="select_donor_dashboard" class="portal-select bg-black/40 border border-white/20 rounded-2xl px-4 py-3 text-xs text-white font-bold focus:outline-none focus:ring-2 focus:ring-teal-400">
                                             <?php foreach ($portal_donors as $pdn): ?>
                                             <option value="<?php echo $pdn['id']; ?>">
                                                 <?php echo htmlspecialchars($pdn['name'] . ' ' . $pdn['surname'] . (!empty($pdn['phone']) ? ' (' . $pdn['phone'] . ')' : '')); ?>
                                             </option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <button type="button" onclick="goToDonorPortal()" class="px-5 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-lg flex items-center justify-center gap-1.5 shrink-0">
+                                        <button type="button" onclick="goToDonorPortal()" class="portal-submit-btn px-6 py-3 bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-lg flex items-center justify-center gap-1.5 active:scale-95">
                                             <span>ورود به پرتال</span>
                                             <span>←</span>
                                         </button>
@@ -541,12 +627,12 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                                 </div>
                             </div>
 
-                            <div class="pt-6 border-t border-white/10 mt-6 flex items-center justify-between text-[11px] text-gray-400">
-                                <span class="flex items-center gap-1">
-                                    <span>🛡️</span>
+                            <div class="pt-6 border-t border-white/10 mt-6 flex flex-wrap items-center justify-between gap-3 text-[11px] text-gray-400">
+                                <span class="flex items-center gap-1.5 leading-relaxed">
+                                    <span class="text-emerald-400">🛡️</span>
                                     <span>محرمانگی: عدم نمایش مشخصات واقعی، تلفن و آدرس</span>
                                 </span>
-                                <a href="../donor-dashboard.php" class="text-emerald-300 hover:underline font-bold flex items-center gap-1">
+                                <a href="../donor-dashboard.php" class="text-emerald-300 hover:text-emerald-200 hover:underline font-bold flex items-center gap-1 shrink-0 py-1">
                                     <span>مشاهده پورتال نمونه</span>
                                     <span>↗</span>
                                 </a>
@@ -572,10 +658,10 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                 </script>
 
                 <!-- Navigation Hub -->
-                <div class="bg-primary-900 rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden">
+                <div class="bg-primary-900 rounded-3xl md:rounded-[3.5rem] p-6 sm:p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
                     <div class="absolute -right-20 -top-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl"></div>
-                    <h2 class="text-3xl font-black mb-8 relative z-10">مدیریت مستقیم</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 relative z-10">
+                    <h2 class="text-2xl md:text-3xl font-black mb-6 sm:mb-8 relative z-10">مدیریت مستقیم</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-4 sm:gap-6 relative z-10">
                         <a href="../people-list.php" class="bg-white/10 hover:bg-white/20 p-8 rounded-[2rem] border border-white/5 transition-all group">
                             <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">📋</div>
                             <h4 class="text-xl font-bold">لیست مددجویان</h4>
@@ -654,7 +740,7 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
 
                 <?php if ($can_view_logs): ?>
                 <!-- Live Audit & Activity Monitor on CEO Dashboard -->
-                <div class="bg-white rounded-[3rem] p-8 md:p-10 shadow-xl border border-gray-100">
+                <div class="bg-white rounded-3xl md:rounded-[3rem] p-6 sm:p-8 md:p-10 shadow-xl border border-gray-100">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-gray-100">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-2xl shadow-sm">
@@ -731,8 +817,8 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
             </div>
 
             <!-- Inactive Alerts Area -->
-            <div class="w-full lg:w-96 space-y-6">
-                <div class="bg-rose-50 rounded-[3rem] p-8 border border-rose-100 shadow-sm relative overflow-hidden">
+            <div class="w-full lg:w-80 xl:w-96 space-y-6 shrink-0">
+                <div class="bg-rose-50 rounded-3xl md:rounded-[3rem] p-6 sm:p-8 border border-rose-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-red-400"></div>
                     <div class="flex items-center gap-3 mb-6">
                         <span class="text-2xl">⚠️</span>
@@ -755,7 +841,7 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                     </div>
                 </div>
 
-                <div class="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm text-center flex flex-col justify-between">
+                <div class="bg-white rounded-3xl md:rounded-[3rem] p-6 sm:p-8 border border-gray-100 shadow-sm text-center flex flex-col justify-between">
                     <div>
                         <div class="text-4xl mb-3 text-teal-600">🎂</div>
                         <h3 class="text-sm font-black text-gray-900 mb-1">تقویم و یادآور هوشمند تولدها</h3>
