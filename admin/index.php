@@ -398,7 +398,7 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                         </div>
                     </div>
                     <div class="flex items-center gap-3 relative z-10 w-full lg:w-auto justify-end flex-shrink-0">
-                        <a href="library.php" class="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-lg shadow-amber-500/30 flex items-center gap-2">
+                        <a href="/admin/library.php" class="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-lg shadow-amber-500/30 flex items-center gap-2">
                             <span>ورود به بانک کتاب و امانات</span>
                             <span>←</span>
                         </a>
@@ -635,7 +635,7 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                             <h4 class="text-xl font-bold">گزارش ریز هزینه‌ها</h4>
                             <p class="text-[10px] text-white/50 mt-2">هزینه‌کرد مددجویان و سرفصل‌ها</p>
                         </a>
-                        <a href="library.php" class="bg-teal-500/15 hover:bg-teal-500/25 p-8 rounded-[2rem] border border-teal-500/30 transition-all group relative">
+                        <a href="/admin/library.php" class="bg-teal-500/15 hover:bg-teal-500/25 p-8 rounded-[2rem] border border-teal-500/30 transition-all group relative">
                             <div class="absolute top-4 left-4 bg-teal-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">کتابخانه</div>
                             <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">📚</div>
                             <h4 class="text-xl font-bold text-teal-200">بانک کتاب و امانات (۲۰۱ جلد)</h4>
