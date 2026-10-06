@@ -6,6 +6,10 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $base_url = isset($base_url) ? $base_url : '';
 $user_name = $_SESSION['user_name'] ?? 'کاربر گرامی';
+if ($user_name === 'فرید علمی (مدیرعامل)' || $user_name === 'فرید علمی' || ($_SESSION['username'] ?? '') === 'faridelmi') {
+    $user_name = 'فرید برهان علمی (مدیرعامل)';
+    $_SESSION['user_name'] = $user_name;
+}
 $is_admin = $_SESSION['is_admin'] ?? false;
 $role = $_SESSION['role'] ?? '';
 $related_id = $_SESSION['related_id'] ?? 0;
@@ -21,40 +25,84 @@ $related_id = $_SESSION['related_id'] ?? 0;
                 </svg>
             </button>
             <div class="hidden lg:flex items-center gap-2 border-l pl-4 border-gray-200">
-                <div class="w-10 h-10 bg-gradient-to-tr from-primary-600 to-teal-400 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md">ح</div>
-                <a href="<?php echo $base_url; ?>index.php" class="text-lg font-black text-primary-900 hover:text-teal-600 transition-colors">بنیاد حکمت</a>
+                <a href="<?php echo $base_url; ?>index.php" class="flex items-center gap-2 group" title="بازگشت به صفحه اصلی (خانه)">
+                    <div class="w-10 h-10 bg-gradient-to-tr from-primary-600 to-teal-400 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md group-hover:scale-105 transition-transform">ح</div>
+                    <span class="text-lg font-black text-primary-900 group-hover:text-teal-600 transition-colors">بنیاد حکمت</span>
+                </a>
             </div>
             
             <div class="flex flex-col text-right pr-2">
                 <span class="text-[10px] text-gray-500 font-bold">خوش آمدید،</span>
-                <span class="text-sm font-black text-primary-900 truncate max-w-[150px] sm:max-w-xs"><?php echo htmlspecialchars($user_name); ?></span>
+                <span class="text-sm font-black text-primary-900 truncate max-w-[170px] sm:max-w-xs" title="<?php echo htmlspecialchars($user_name); ?>"><?php echo htmlspecialchars($user_name); ?></span>
             </div>
         </div>
 
-        <!-- Desktop Action Links -->
-        <div class="hidden lg:flex items-center gap-4 text-sm font-bold text-gray-600">
-            <a href="<?php echo $base_url; ?>index.php" class="hover:text-primary-600 transition-colors">خانه</a>
-            
+        <!-- Desktop Action Links (Icon Buttons with Tooltips) -->
+        <div class="hidden lg:flex items-center gap-2 text-sm font-bold text-gray-600">
             <?php if ($role === 'data_operator' || (function_exists('is_viana') && is_viana())): ?>
-                <a href="<?php echo $base_url; ?>admin/library.php" class="text-teal-700 bg-teal-50 hover:bg-teal-100 px-3.5 py-1.5 rounded-lg border border-teal-200 text-xs flex items-center gap-1 font-bold">📚 بانک کتاب و امانات (۲۰۱ جلد)</a>
-                <a href="<?php echo $base_url; ?>switch-role.php?target=student" class="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 text-xs flex items-center gap-1 font-bold">🎒 پورتال دانش‌آموزی ویانا</a>
+                <a href="<?php echo $base_url; ?>admin/library.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 shadow-sm hover:scale-105 transition-all" title="بانک کتاب و امانات (۲۰۱ جلد)">
+                    <span>📚</span>
+                    <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">بانک کتاب و امانات</span>
+                </a>
+                <a href="<?php echo $base_url; ?>switch-role.php?target=student" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm hover:scale-105 transition-all" title="پورتال دانش‌آموزی ویانا">
+                    <span>🎒</span>
+                    <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">پورتال دانش‌آموزی ویانا</span>
+                </a>
             <?php elseif ($is_admin): ?>
-                <a href="<?php echo $base_url; ?>admin/index.php" class="text-teal-600 bg-teal-50 px-4 py-1.5 rounded-lg border border-teal-100">میز کار مدیریت</a>
-                <a href="<?php echo $base_url; ?>admin/library.php" class="text-amber-700 hover:bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 text-xs flex items-center gap-1 font-bold">📚 بانک کتاب و امانات</a>
-                <a href="<?php echo $base_url; ?>student-dashboard.php" class="text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 text-xs flex items-center gap-1 font-bold">🎒 پورتال دانش‌آموزان</a>
-                <a href="<?php echo $base_url; ?>donor-dashboard.php" class="text-teal-700 hover:bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-200 text-xs flex items-center gap-1 font-bold">💎 پورتال خیرین</a>
-                <a href="<?php echo $base_url; ?>admin/diamond-candidates.php" class="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 text-xs flex items-center gap-1 font-bold">💎 گنج‌های پنهان</a>
+                <!-- میز کار مدیریت -->
+                <a href="<?php echo $base_url; ?>admin/index.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 shadow-sm hover:scale-105 transition-all" title="میز کار جامع مدیریت">
+                    <span>🎛️</span>
+                    <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">میز کار مدیریت</span>
+                </a>
+                
+                <!-- بانک کتاب و امانات -->
+                <a href="<?php echo $base_url; ?>admin/library.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 shadow-sm hover:scale-105 transition-all" title="بانک کتاب و امانات">
+                    <span>📚</span>
+                    <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">بانک کتاب و امانات</span>
+                </a>
+                
+                <!-- گنج‌های پنهان -->
+                <a href="<?php echo $base_url; ?>admin/diamond-candidates.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm hover:scale-105 transition-all" title="پویش گنج‌های پنهان">
+                    <span>💎</span>
+                    <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">گنج‌های پنهان</span>
+                </a>
+                
                 <?php if ($role === 'superadmin' || $role === 'admin'): ?>
-                    <a href="<?php echo $base_url; ?>admin/audit-logs.php" class="text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 text-xs flex items-center gap-1">📜 لاگ سیستم</a>
+                    <!-- مصاحبه روانسنجی -->
+                    <a href="<?php echo $base_url; ?>admin-interview-tests.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 shadow-sm hover:scale-105 transition-all" title="سامانه مصاحبه و ارزیابی روانسنجی">
+                        <span>🧠</span>
+                        <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">مصاحبه روانسنجی</span>
+                    </a>
+                    
+                    <!-- لاگ سیستم -->
+                    <a href="<?php echo $base_url; ?>admin/audit-logs.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 shadow-sm hover:scale-105 transition-all" title="گزارش وقایع و لاگ سیستم">
+                        <span>📜</span>
+                        <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">لاگ سیستم</span>
+                    </a>
                 <?php endif; ?>
             <?php elseif ($role === 'student'): ?>
-                <a href="<?php echo $base_url; ?>student-dashboard.php" class="text-blue-600 bg-blue-50 px-4 py-1.5 rounded-lg border border-blue-100">داشبورد من</a>
+                <a href="<?php echo $base_url; ?>student-dashboard.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 shadow-sm hover:scale-105 transition-all" title="داشبورد من">
+                    <span>🎓</span>
+                    <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">داشبورد من</span>
+                </a>
             <?php elseif ($role === 'benefactor'): ?>
-                <a href="<?php echo $base_url; ?>donor-dashboard.php" class="text-teal-600 bg-teal-50 px-4 py-1.5 rounded-lg border border-teal-100">پورتال پشتیبان</a>
+                <a href="<?php echo $base_url; ?>donor-dashboard.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 shadow-sm hover:scale-105 transition-all" title="پورتال پشتیبان">
+                    <span>💎</span>
+                    <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">پورتال پشتیبان</span>
+                </a>
             <?php endif; ?>
             
-            <button onclick="openChangePasswordModal()" class="text-gray-600 hover:text-teal-700 bg-gray-50 hover:bg-teal-50 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-teal-200 transition-colors text-xs flex items-center gap-1 font-bold">🔑 تغییر رمز</button>
-            <a href="<?php echo $base_url; ?>admin-logout.php" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1">خروج</a>
+            <!-- تغییر رمز عبور -->
+            <button onclick="openChangePasswordModal()" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-gray-50 hover:bg-teal-50 text-gray-700 hover:text-teal-700 border border-gray-200 hover:border-teal-200 shadow-sm hover:scale-105 transition-all" title="تغییر رمز عبور">
+                <span>🔑</span>
+                <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">تغییر رمز</span>
+            </button>
+            
+            <!-- خروج از حساب -->
+            <a href="<?php echo $base_url; ?>admin-logout.php" class="relative group w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-red-50 hover:bg-red-500 hover:text-white text-red-500 border border-red-200 shadow-sm hover:scale-105 transition-all" title="خروج از حساب">
+                <span>🚪</span>
+                <span class="absolute -bottom-9 right-1/2 translate-x-1/2 hidden group-hover:flex items-center px-2 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-md whitespace-nowrap shadow-lg pointer-events-none z-50">خروج</span>
+            </a>
         </div>
         
         <!-- Mobile Logout Shortcut -->
@@ -138,6 +186,9 @@ $related_id = $_SESSION['related_id'] ?? 0;
                     <span class="text-xl">💸</span> گزارش هزینه‌ها
                 </a>
                 <?php if ($role === 'superadmin' || $role === 'admin'): ?>
+                <a href="<?php echo $base_url; ?>admin-interview-tests.php" class="flex items-center gap-3 p-3 hover:bg-teal-50 text-teal-800 rounded-xl transition-colors bg-teal-50/50 font-bold">
+                    <span class="text-xl">🧠</span> مصاحبه و ارزیابی روانسنجی
+                </a>
                 <a href="<?php echo $base_url; ?>admin/audit-logs.php" class="flex items-center gap-3 p-3 hover:bg-amber-50 text-amber-700 rounded-xl transition-colors">
                     <span class="text-xl">📜</span> گزارش و لاگ سیستم
                 </a>

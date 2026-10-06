@@ -26,11 +26,12 @@ $total_students = $pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
 $total_donors = $pdo->query("SELECT COUNT(*) FROM donors")->fetchColumn();
 $total_collected = $pdo->query("SELECT SUM(total_donated) FROM donors")->fetchColumn();
 
-// 2. Inactive Donors (> 90 days)
+// 2. Inactive Donors (> 90 days) - Exclude CEO/Management from inactive list
 $inactive_query = "
     SELECT d.id, d.name, d.surname, MAX(dn.date) as last_date
     FROM donors d
     LEFT JOIN donations dn ON d.id = dn.donor_id
+    WHERE d.id != 1305 AND (d.name NOT LIKE '%فرید%' OR d.surname NOT LIKE '%برهان%')
     GROUP BY d.id
     HAVING last_date < '1404/10/01' OR last_date IS NULL
     LIMIT 5
@@ -101,6 +102,10 @@ $total_donors_with_bday = count($people_dn);
 // 4. Diamond Campaign Stats
 $diamond_total = $pdo->query("SELECT COUNT(*) FROM diamond_candidates")->fetchColumn() ?: 0;
 $diamond_top = $pdo->query("SELECT COUNT(*) FROM diamond_candidates WHERE score >= 12")->fetchColumn() ?: 0;
+
+// 4.1 Interview Psychometric Tests Stats
+$interview_total = $pdo->query("SELECT COUNT(*) FROM interview_tests")->fetchColumn() ?: 0;
+$interview_completed = $pdo->query("SELECT COUNT(*) FROM interview_tests WHERE status = 'completed'")->fetchColumn() ?: 0;
 
 // 5. User Portals Data for Manager & Supervisor Quick Access
 $portal_students = $pdo->query("SELECT id, code, name, surname, grade, status FROM students ORDER BY CASE WHEN status = 'active' THEN 1 WHEN status = 'university' THEN 2 WHEN status = 'graduated' THEN 3 ELSE 4 END, name ASC, surname ASC")->fetchAll(PDO::FETCH_ASSOC);
@@ -270,7 +275,7 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                         <div class="w-16 h-16 rounded-2xl bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-3xl flex-shrink-0">👑</div>
                         <div>
                             <div class="text-xs font-bold text-teal-300 mb-1">مدیریت عامل بنیاد نیکوکاری حکمت</div>
-                            <h2 class="text-xl md:text-2xl font-black text-white">جناب آقای فرید علمی، به میز کار جامع مدیریت خوش آمدید</h2>
+                            <h2 class="text-xl md:text-2xl font-black text-white">جناب آقای فرید برهان علمی، به میز کار جامع مدیریت خوش آمدید</h2>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
@@ -302,6 +307,43 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                         <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-2xl mb-4">💰</div>
                         <div class="text-2xl font-black text-primary-900"><?php echo toFarsiDigits(number_format($total_collected / 1000000000, 1)); ?> <span class="text-xs">میلیارد</span></div>
                         <div class="text-[10px] text-gray-400 font-bold">جذب سرمایه (ریال)</div>
+                    </div>
+                </div>
+
+                <!-- Live Psychometrics & Interview Engine Banner -->
+                <div class="p-6 md:p-8 rounded-[2.5rem] bg-gradient-to-r from-teal-950 via-slate-900 to-emerald-950 border-2 border-teal-400/50 text-white shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 ring-2 ring-teal-500/20">
+                    <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-teal-500/15 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="flex items-center gap-5 relative z-10">
+                        <div class="w-16 h-16 rounded-2xl bg-teal-500/20 border border-teal-300/40 flex items-center justify-center text-3xl shadow-lg shadow-teal-500/30 flex-shrink-0 animate-pulse">
+                            🧠
+                        </div>
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-xs font-black mb-2 border border-teal-400/30">
+                                <span>سامانه جدید مصاحبه آنلاین و روانسنجی</span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-ping"></span>
+                            </div>
+                            <h3 class="text-base md:text-lg font-black text-white leading-relaxed">
+                                صدور لینک پیامکی آزمون‌های روانسنجی و مصاحبه (گاردنر، هوش هیجانی، سلامت روان و انگیزه پیشرفت)
+                            </h3>
+                            <p class="text-xs text-teal-100/80 mt-1 max-w-xl leading-relaxed">
+                                ارسال لینک اختصاصی زمان‌دار بدون نیاز به نرم‌افزار ویندوز، با تایمرهای تنظیم‌شده برای هر سوال و ثبت خودکار کارنامه در پرونده داوطلب.
+                            </p>
+                            <div class="flex items-center gap-3 mt-2 text-[11px] text-teal-300 font-bold">
+                                <span>📊 آزمون‌های صادر شده: <strong class="text-white font-mono text-xs"><?php echo toFarsiDigits($interview_total); ?></strong></span>
+                                <span>•</span>
+                                <span>✅ تکمیل‌شده: <strong class="text-emerald-300 font-mono text-xs"><?php echo toFarsiDigits($interview_completed); ?></strong></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center gap-3 relative z-10 w-full md:w-auto justify-end flex-shrink-0">
+                        <a href="interview-tests.php" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-xl shadow-teal-500/30 flex items-center justify-center gap-2">
+                            <span>ورود به سامانه و صدور لینک آزمون</span>
+                            <span>←</span>
+                        </a>
+                        <a href="../interview-test.php?demo=1" target="_blank" class="w-full sm:w-auto px-4 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5">
+                            <span>پیش‌نمایش آزمون</span>
+                            <span>👁️</span>
+                        </a>
                     </div>
                 </div>
 
