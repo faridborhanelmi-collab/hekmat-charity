@@ -245,9 +245,15 @@ $donations = $donations_stmt->fetchAll();
 
 // Fetch Sponsored Students
 $students_stmt = $pdo->prepare("
-    SELECT s.id as spon_id, s.shares_count, s.start_date, s.status as spon_status, st.id as student_id, st.name as st_real_name, st.surname as st_real_surname, st.code as st_code, st.alias_name, st.avatar_url, st.talents, st.dreams, st.grade, st.field_of_study 
+    SELECT s.id as spon_id, s.shares_count, s.start_date, s.status as spon_status, 
+           st.id as student_id, st.name as st_real_name, st.surname as st_real_surname, 
+           st.code as st_code, st.alias_name, st.avatar_url, st.talents, st.dreams, 
+           st.grade, st.field_of_study,
+           sp.hti_score, sp.final_grade as psych_grade, sp.recommendation as psych_rec,
+           sp.mi_total, sp.hermans_score, sp.eq_total
     FROM sponsorships s 
     JOIN students st ON s.student_id = st.id 
+    LEFT JOIN student_psychology sp ON st.id = sp.student_id
     WHERE s.donor_id = ? AND s.status IN ('active', 'pending') AND st.status IN ('active', 'university')
     ORDER BY CASE WHEN s.status = 'pending' THEN 0 ELSE 1 END, s.id DESC
 ");
@@ -312,11 +318,12 @@ function formatGradeLabel($grade, $field = '') {
     return $res;
 }
 
-// Fetch all unsponsored students with their latest report card file from documents table
+// Fetch students with their latest report card file from documents table (both seeking sponsors and sponsored)
 $available_students_stmt = $pdo->query("
-    SELECT s.id, s.code, s.name, s.surname, s.gender, s.grade, s.field_of_study, s.talents, s.dreams, s.alias_name,
+    SELECT s.id, s.code, s.name, s.surname, s.gender, s.grade, s.field_of_study, s.talents, s.dreams, s.alias_name, s.explanations,
            d.file_path as report_card_path, d.file_name as report_card_name,
-           sp.final_grade
+           sp.final_grade, sp.hti_score, sp.hermans_score, sp.hermans_grade, sp.mi_total, sp.eq_total, sp.eq_grade, sp.recommendation as psych_rec,
+           (SELECT count(*) FROM sponsorships spon WHERE spon.student_id = s.id AND spon.status = 'active') as is_sponsored
     FROM students s
     LEFT JOIN (
         SELECT owner_id, file_path, file_name, ROW_NUMBER() OVER (PARTITION BY owner_id ORDER BY id DESC) as rn
@@ -328,10 +335,12 @@ $available_students_stmt = $pdo->query("
       AND s.bursary_eligible = 1
       AND (s.code IS NULL OR s.code != 'GENERAL')
       AND (s.name IS NULL OR s.name != 'بنیاد')
-      AND (SELECT count(*) FROM sponsorships spon WHERE spon.student_id = s.id AND spon.status = 'active') = 0
+      AND s.id NOT IN (SELECT student_id FROM sponsorships WHERE donor_id = " . (int)$donor_id . " AND status IN ('active', 'pending'))
     ORDER BY 
+      is_sponsored ASC,
+      CASE WHEN sp.hti_score IS NOT NULL AND sp.hti_score > 0 THEN 0 ELSE 1 END,
       CASE WHEN d.file_path IS NOT NULL THEN 0 ELSE 1 END,
-      s.id ASC
+      s.id DESC
 ");
 $available_students = $available_students_stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -342,14 +351,22 @@ $total_available_boys = 0;
 $total_available_reports = 0;
 $total_available_seniors = 0;
 $total_available_juniors = 0;
+$total_seeking_sponsors = 0;
+$total_already_sponsored = 0;
 
 foreach ($available_students as $st) {
     $gender = getStudentGender($st);
+    $is_spon = ((int)($st['is_sponsored'] ?? 0)) > 0;
+    if ($is_spon) {
+        $total_already_sponsored++;
+    } else {
+        $total_seeking_sponsors++;
+    }
     if ($gender === 'دختر') $total_available_girls++; else $total_available_boys++;
     if (!empty($st['report_card_path'])) $total_available_reports++;
 
     $code_num = !empty($st['code']) && is_numeric($st['code']) ? $st['code'] : $st['id'];
-    $formal_alias = 'حکمت‌جوی ' . toFarsi((string)$code_num);
+    $formal_alias = !empty($st['alias_name']) ? $st['alias_name'] : ('حکمت‌جوی ' . toFarsi((string)$code_num));
     $grade_disp = formatGradeLabel($st['grade'], $st['field_of_study']);
     
     $grade_cat = 'senior'; // دبیرستان
@@ -364,6 +381,8 @@ foreach ($available_students as $st) {
         $total_available_seniors++;
     }
     
+    $hti_val = !empty($st['hti_score']) && (int)$st['hti_score'] > 0 ? (int)$st['hti_score'] : null;
+
     $processed_students[] = [
         'id' => (int)$st['id'],
         'code' => (string)$code_num,
@@ -376,10 +395,20 @@ foreach ($available_students as $st) {
         'grade_cat' => $grade_cat,
         'talents' => $st['talents'] ?: 'دارای استعداد درخشان تحصیلی و تعهد بالا به رشد علمی',
         'dreams' => $st['dreams'] ?: 'کسب مدارج عالی علمی، ورود به دانشگاه‌های برتر و خدمت به میهن',
+        'explanations' => $st['explanations'] ?: '',
         'has_report' => !empty($st['report_card_path']),
         'report_path' => $st['report_card_path'] ?: '',
         'report_name' => $st['report_card_name'] ?: 'کارنامه تحصیلی تایید شده بنیاد',
-        'final_grade' => $st['final_grade'] ?: ''
+        'final_grade' => $st['final_grade'] ?: '',
+        'hti_score' => $hti_val,
+        'hti_fa' => $hti_val ? toFarsi((string)$hti_val) : null,
+        'hermans_score' => !empty($st['hermans_score']) ? (int)$st['hermans_score'] : null,
+        'hermans_grade' => $st['hermans_grade'] ?: '',
+        'mi_total' => !empty($st['mi_total']) ? (int)$st['mi_total'] : null,
+        'eq_total' => !empty($st['eq_total']) ? (int)$st['eq_total'] : null,
+        'eq_grade' => $st['eq_grade'] ?: '',
+        'psych_rec' => $st['psych_rec'] ?: '',
+        'is_sponsored' => $is_spon
     ];
 }
 ?>
@@ -445,7 +474,7 @@ foreach ($available_students as $st) {
             activeSponId: '<?php echo !empty($sponsored_students) ? $sponsored_students[0]['spon_id'] : ''; ?>',
             activeStudentId: '<?php echo !empty($sponsored_students) ? $sponsored_students[0]['student_id'] : ''; ?>',
             showDonationModal: false,
-            donationAmount: '3000000',
+            donationAmount: '<?php echo $total_shares > 0 ? ($total_shares * 3000000) : 3000000; ?>',
             activeTab: 'gateway',
             students: <?php echo json_encode($processed_students, JSON_UNESCAPED_UNICODE); ?>,
             searchQuery: '',
@@ -455,6 +484,9 @@ foreach ($available_students as $st) {
             showStudentModal: false,
             get filteredStudents() {
                 return this.students.filter(st => {
+                    if (this.activeFilter === 'available' && st.is_sponsored) return false;
+                    if (this.activeFilter === 'sponsored' && !st.is_sponsored) return false;
+                    if (this.activeFilter === 'talented' && (!st.hti_score || st.hti_score <= 0)) return false;
                     if (this.activeFilter === 'female' && st.gender !== 'دختر') return false;
                     if (this.activeFilter === 'male' && st.gender !== 'پسر') return false;
                     if (this.activeFilter === 'has_report' && !st.has_report) return false;
@@ -475,6 +507,9 @@ foreach ($available_students as $st) {
                 return this.filteredStudents.slice(0, this.displayLimit);
             },
             countByFilter(flt) {
+                if (flt === 'available') return this.students.filter(s => !s.is_sponsored).length;
+                if (flt === 'sponsored') return this.students.filter(s => s.is_sponsored).length;
+                if (flt === 'talented') return this.students.filter(s => s.hti_score && s.hti_score > 0).length;
                 if (flt === 'female') return this.students.filter(s => s.gender === 'دختر').length;
                 if (flt === 'male') return this.students.filter(s => s.gender === 'پسر').length;
                 if (flt === 'has_report') return this.students.filter(s => s.has_report).length;
@@ -647,7 +682,13 @@ foreach ($available_students as $st) {
                 <div class="mt-8 border-t border-white/10 pt-6 flex justify-between items-center">
                     <div>
                         <span class="text-[9px] text-white/50 block">مجموع بورس‌های تحت حمایت شما</span>
-                        <div class="text-2xl font-black mt-1"><?php echo toFarsi(number_format($total_shares)); ?> <span class="text-xs">سهم</span></div>
+                        <div class="text-2xl font-black mt-1"><?php echo toFarsi(number_format($total_shares)); ?> <span class="text-xs">سهم (دانش‌آموز)</span></div>
+                        <?php if ($total_shares > 0): ?>
+                        <div class="text-[11px] text-teal-200 font-bold mt-1.5 flex items-center gap-1">
+                            <span>💳 تعهد بورس ماهانه:</span>
+                            <span class="font-black text-amber-300"><?php echo toFarsi(number_format($total_shares * 3000000)); ?> تومان</span>
+                        </div>
+                        <?php endif; ?>
                     </div>
                     <div class="bg-white/10 w-12 h-12 rounded-2xl flex items-center justify-center text-teal-300 font-bold text-xs border border-white/10">
                         بورس
@@ -697,8 +738,16 @@ foreach ($available_students as $st) {
             <h2 class="text-xl font-black text-primary-900 flex items-center gap-3">
                 <span class="w-2.5 h-6 bg-teal-600 rounded-full inline-block"></span> فرزندان معنوی تحت حمایت شما
             </h2>
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-[11px] font-bold">
-                پورتال منطبق بر اصل کرامت نخبگان (حفظ کامل اطلاعات هویتی و محرمانگی)
+            <div class="flex flex-wrap items-center gap-2">
+                <?php if (!empty($sponsored_students)): ?>
+                <a href="#quick-students" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white rounded-2xl text-xs font-black shadow-md hover:shadow-teal-600/20 transition-all">
+                    <span>➕</span>
+                    <span>حمایت از فرزند معنوی جدید</span>
+                </a>
+                <?php endif; ?>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-[11px] font-bold">
+                    پورتال منطبق بر اصل کرامت نخبگان (حفظ کامل اطلاعات هویتی و محرمانگی)
+                </div>
             </div>
         </div>
 
@@ -733,256 +782,7 @@ foreach ($available_students as $st) {
                     </div>
                 </div>
 
-                <!-- Quick Direct Student Selection Grid -->
-                <div id="quick-students" class="bg-white p-6 md:p-10 rounded-[3rem] border border-gray-100 shadow-sm">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-gray-100">
-                        <div>
-                            <h3 class="text-xl font-black text-gray-900 flex items-center gap-2">
-                                <span class="w-2.5 h-6 bg-teal-600 rounded-full inline-block"></span>
-                                دانش‌آموزان مستعد چشم‌انتظار حامی (انتخاب مستقیم)
-                            </h3>
-                            <p class="text-xs text-gray-500 mt-1 font-medium">با انتخاب هر دانش‌پژوه، سرپرستی معنوی او بلافاصله به پرونده شما افزوده می‌شود. جهت شفافیت و اطمینان، می‌توانید کارنامه تحصیلی و سوابق هر دانش‌پژوه را مشاهده فرمایید.</p>
-                        </div>
-                        <a href="campaign.php#students" class="text-xs text-teal-700 hover:text-teal-800 font-bold shrink-0 bg-teal-50 px-3.5 py-2 rounded-xl border border-teal-200 transition-colors">
-                            مشاهده تمام پرونده‌ها در پویش حکمت‌یار ←
-                        </a>
-                    </div>
-
-                    <!-- Search and Filter Bar -->
-                    <div class="space-y-4 mb-8">
-                        <!-- Live Search Input -->
-                        <div class="relative">
-                            <input type="text" x-model="searchQuery"
-                                placeholder="جستجو بر اساس کد حکمت‌جو (مثلاً ۳۵ یا ۶۱)، رشته یا مقطع تحصیلی..."
-                                class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 pr-11 text-xs focus:outline-none focus:border-teal-500 transition-all font-medium">
-                            <div class="absolute right-4 top-3.5 text-gray-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            </div>
-                            <button type="button" x-show="searchQuery" @click="searchQuery = ''" class="absolute left-4 top-3 text-xs text-gray-400 hover:text-gray-600 font-bold" x-cloak>پاک کردن</button>
-                        </div>
-
-                        <!-- Filter Tabs -->
-                        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
-                            <button type="button" @click="activeFilter = 'all'"
-                                :class="activeFilter === 'all' ? 'bg-teal-700 text-white font-black shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 font-bold'"
-                                class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                همه حکمت‌جویان (<?php echo toFarsi(count($processed_students)); ?>)
-                            </button>
-                            <button type="button" @click="activeFilter = 'female'"
-                                :class="activeFilter === 'female' ? 'bg-rose-700 text-white font-black shadow-md' : 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200 font-bold'"
-                                class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                دختران (<?php echo toFarsi($total_available_girls); ?>)
-                            </button>
-                            <button type="button" @click="activeFilter = 'male'"
-                                :class="activeFilter === 'male' ? 'bg-teal-900 text-white font-black shadow-md' : 'bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200 font-bold'"
-                                class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                پسران (<?php echo toFarsi($total_available_boys); ?>)
-                            </button>
-                            <button type="button" @click="activeFilter = 'has_report'"
-                                :class="activeFilter === 'has_report' ? 'bg-emerald-700 text-white font-black shadow-md' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-bold'"
-                                class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                دارای کارنامه رسمی (<?php echo toFarsi($total_available_reports); ?>)
-                            </button>
-                            <button type="button" @click="activeFilter = 'senior'"
-                                :class="activeFilter === 'senior' ? 'bg-gray-800 text-white font-black shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 font-bold'"
-                                class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                متوسطه دوم / دبیرستان (<?php echo toFarsi($total_available_seniors); ?>)
-                            </button>
-                            <button type="button" @click="activeFilter = 'junior'"
-                                :class="activeFilter === 'junior' ? 'bg-gray-800 text-white font-black shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 font-bold'"
-                                class="px-4 py-2 rounded-xl transition-all shrink-0">
-                                متوسطه اول (<?php echo toFarsi($total_available_juniors); ?>)
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- No Results Message -->
-                    <template x-if="filteredStudents.length === 0">
-                        <div class="p-12 text-center text-gray-400 font-bold text-xs bg-gray-50 rounded-3xl border border-gray-100">
-                            دانش‌پژوهی با مشخصات جستجو شده یافت نشد. لطفاً فیلترها را تغییر دهید.
-                        </div>
-                    </template>
-
-                    <!-- Student Cards Grid (Dignified - Zero Emojis & Zero Cartoon Avatars) -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <template x-for="st in paginatedStudents" :key="st.id">
-                            <div class="bg-gradient-to-b from-gray-50/60 to-white p-6 rounded-3xl border border-gray-200/90 hover:border-teal-600 hover:shadow-xl hover:shadow-teal-600/10 transition-all flex flex-col justify-between group">
-                                <div>
-                                    <!-- Card Header -->
-                                    <div class="flex items-start justify-between gap-3 mb-4">
-                                        <div class="flex items-center gap-3">
-                                            <!-- Dignified Code Badge (No Cartoon Robots) -->
-                                            <div class="w-13 h-13 rounded-2xl flex flex-col items-center justify-center font-black transition-transform group-hover:scale-105 shadow-sm shrink-0 p-2"
-                                                 :class="st.gender === 'دختر' ? 'bg-gradient-to-br from-rose-50 to-pink-100 text-rose-900 border border-rose-200' : 'bg-gradient-to-br from-slate-100 to-teal-100 text-teal-950 border border-teal-200'">
-                                                <span class="text-[9px] opacity-75 font-normal">کد</span>
-                                                <span class="text-sm font-black font-mono -mt-0.5" x-text="st.code_fa"></span>
-                                            </div>
-                                            <div>
-                                                <h4 class="font-black text-sm text-gray-900" x-text="st.alias"></h4>
-                                                <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                                                    <!-- Gender Badge -->
-                                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold"
-                                                          :class="st.gender === 'دختر' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-blue-50 text-blue-700 border border-blue-200'"
-                                                          x-text="st.gender"></span>
-                                                    <!-- Grade Label -->
-                                                    <span class="text-[11px] text-gray-500 font-bold" x-text="st.grade_disp"></span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Report Card Indicator Badge -->
-                                        <template x-if="st.has_report">
-                                            <span class="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
-                                                کارنامه تایید شده
-                                            </span>
-                                        </template>
-                                    </div>
-
-                                    <!-- Bursary & Talents Info Box -->
-                                    <div class="space-y-2 mb-6 text-xs text-gray-600 bg-white p-4 rounded-2xl border border-gray-100">
-                                        <div class="flex items-center justify-between pb-2 border-b border-gray-100">
-                                            <span class="text-gray-400 text-[11px]">ارزش بورس ماهانه:</span>
-                                            <span class="font-black text-teal-800 font-mono text-[11px]">۳,۰۰۰,۰۰۰ تومان</span>
-                                        </div>
-                                        <div class="text-[11px] text-gray-600 pt-1 line-clamp-2 leading-relaxed">
-                                            <strong class="text-gray-800 font-bold">استعداد و علایق:</strong> <span x-text="st.talents"></span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Actions -->
-                                <div class="space-y-2 pt-2 border-t border-gray-100">
-                                    <button type="button" @click="selectedStudent = st; showStudentModal = true"
-                                        class="w-full bg-white hover:bg-teal-50/60 text-teal-900 border border-teal-200 hover:border-teal-400 py-2.5 px-3 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm">
-                                        مشاهده پرونده و کارنامه تحصیلی
-                                    </button>
-                                    
-                                    <form method="POST" action="" :onsubmit="'return confirm(\'آیا مایلید سرپرستی معنوی \' + st.alias + \' را بر عهده بگیرید؟\')'">
-                                        <input type="hidden" name="action" value="quick_sponsor">
-                                        <input type="hidden" name="student_id" :value="st.id">
-                                        <button type="submit" class="w-full bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-600 hover:to-teal-700 text-white font-black py-2.5 px-4 rounded-2xl shadow-md transition-all text-xs flex items-center justify-center gap-2 group-hover:shadow-teal-700/20">
-                                            انتخاب به عنوان فرزند معنوی
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <!-- Pagination / Show More -->
-                    <template x-if="filteredStudents.length > displayLimit">
-                        <div class="mt-8 text-center">
-                            <button type="button" @click="displayLimit += 12"
-                                class="px-8 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-2xl transition-all shadow-sm">
-                                نمایش موارد بیشتر (<span x-text="filteredStudents.length - displayLimit"></span> حکمت‌جوی دیگر)...
-                            </button>
-                        </div>
-                    </template>
-                </div>
-
-                <!-- Student Dossier & Report Card Modal -->
-                <div x-show="showStudentModal" x-cloak class="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
-                    @keydown.escape.window="showStudentModal = false">
-                    <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-2xl w-full p-6 md:p-8 relative border border-gray-100 max-h-[92vh] overflow-y-auto"
-                        @click.away="showStudentModal = false">
-                        
-                        <!-- Modal Header -->
-                        <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-6">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-2xl flex flex-col items-center justify-center font-black shadow-sm p-1"
-                                     :class="selectedStudent?.gender === 'دختر' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-teal-50 text-teal-900 border border-teal-200'">
-                                    <span class="text-[9px] opacity-75 font-normal">کد</span>
-                                    <span class="text-sm font-black -mt-0.5 font-mono" x-text="selectedStudent?.code_fa"></span>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-black text-gray-900" x-text="'پرونده تحصیلی ' + (selectedStudent?.alias || '')"></h3>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <span class="px-2.5 py-0.5 rounded-md text-xs font-bold"
-                                              :class="selectedStudent?.gender === 'دختر' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-blue-50 text-blue-700 border border-blue-200'"
-                                              x-text="selectedStudent?.gender"></span>
-                                        <span class="text-xs text-teal-800 font-bold" x-text="selectedStudent?.grade_disp"></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="button" @click="showStudentModal = false" class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 flex items-center justify-center font-bold text-sm">✕</button>
-                        </div>
-
-                        <!-- Modal Body -->
-                        <div class="space-y-6">
-                            <!-- Highlights Grid -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                    <span class="text-[11px] text-gray-400 block mb-1">مقطع و وضعیت تحصیلی:</span>
-                                    <span class="text-xs font-black text-gray-800" x-text="selectedStudent?.grade_disp"></span>
-                                </div>
-                                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                    <span class="text-[11px] text-gray-400 block mb-1">ارزش بورس آموزشی ماهانه:</span>
-                                    <span class="text-xs font-black text-teal-800 font-mono">۳,۰۰۰,۰۰۰ تومان</span>
-                                </div>
-                            </div>
-
-                            <!-- Talents -->
-                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                <span class="text-[11px] text-gray-400 block mb-1.5 font-bold">استعدادها و سوابق علمی:</span>
-                                <p class="text-xs text-gray-700 leading-relaxed font-medium" x-text="selectedStudent?.talents"></p>
-                            </div>
-
-                            <!-- Dreams -->
-                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                <span class="text-[11px] text-gray-400 block mb-1.5 font-bold">آرمان‌ها و اهداف آینده:</span>
-                                <p class="text-xs text-gray-700 leading-relaxed font-medium" x-text="selectedStudent?.dreams"></p>
-                            </div>
-
-                            <!-- Official Report Card Section -->
-                            <div class="p-5 rounded-2xl border" :class="selectedStudent?.has_report ? 'bg-emerald-50/70 border-emerald-200' : 'bg-gray-50 border-gray-200'">
-                                <div class="flex items-center justify-between mb-3">
-                                    <h4 class="text-xs font-black text-gray-900">سند کارنامه تحصیلی رسمی</h4>
-                                    <template x-if="selectedStudent?.has_report">
-                                        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300">موجود و تایید شده</span>
-                                    </template>
-                                    <template x-if="!selectedStudent?.has_report">
-                                        <span class="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded font-bold">در صف دریافت از مدرسه</span>
-                                    </template>
-                                </div>
-
-                                <template x-if="selectedStudent?.has_report">
-                                    <div class="space-y-3">
-                                        <p class="text-[11px] text-emerald-950 leading-relaxed">
-                                            کارنامه تحصیلی این دانش‌پژوه در دبیرخانه بنیاد ثبت و اعتبار نمرات آن به تایید معاونت آموزش رسیده است.
-                                        </p>
-                                        <div>
-                                            <a :href="selectedStudent?.report_path" target="_blank"
-                                               class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-black px-4 py-2.5 rounded-xl text-xs shadow-md transition-all">
-                                                مشاهده و دریافت فایل کارنامه رسمی ←
-                                            </a>
-                                        </div>
-                                        <!-- Image Preview if JPG/PNG -->
-                                        <template x-if="selectedStudent?.report_path && (selectedStudent?.report_path.endsWith('.jpg') || selectedStudent?.report_path.endsWith('.jpeg') || selectedStudent?.report_path.endsWith('.png'))">
-                                            <div class="mt-3 bg-white p-2 rounded-xl border border-emerald-200 text-center">
-                                                <img :src="selectedStudent?.report_path" alt="پیش‌نمایش کارنامه" class="max-h-72 w-auto mx-auto rounded-lg shadow-sm">
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-
-                                <template x-if="!selectedStudent?.has_report">
-                                    <p class="text-[11px] text-gray-500 leading-relaxed">
-                                        پرونده این دانش‌پژوه اخیراً به سامانه افزوده شده و نسخه رسمی کارنامه توسط کارشناسان آموزشی بنیاد در حال دریافت و بررسی نهایی است.
-                                    </p>
-                                </template>
-                            </div>
-
-                            <!-- Modal Action: Sponsor Button -->
-                            <form method="POST" action="" :onsubmit="'return confirm(\'آیا مایلید سرپرستی معنوی \' + (selectedStudent?.alias || '') + \' را بر عهده بگیرید؟\')'">
-                                <input type="hidden" name="action" value="quick_sponsor">
-                                <input type="hidden" name="student_id" :value="selectedStudent?.id">
-                                <button type="submit" class="w-full bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-600 hover:to-teal-700 text-white font-black py-4 px-6 rounded-2xl shadow-xl transition-all text-xs flex items-center justify-center gap-2">
-                                    تایید و ثبت سرپرستی معنوی این دانش‌پژوه
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+                <?php include 'includes/donor-quick-students.php'; ?>
 
                 <!-- Charity Bank Card & Online Donation Section Directly on Page (Full Width Responsive Grid) -->
                 <div class="bank-section-grid">
@@ -1141,6 +941,12 @@ foreach ($available_students as $st) {
                         <?php endif; ?>
                     </button>
                     <?php endforeach; ?>
+
+                    <!-- Add Another Child Button in Sidebar -->
+                    <a href="#quick-students" class="w-full text-center p-4 border-2 border-dashed border-teal-300 hover:border-teal-500 bg-teal-50/40 hover:bg-teal-50 text-teal-800 rounded-3xl transition-all flex items-center justify-center gap-2 font-black text-xs shadow-sm transform hover:-translate-y-0.5">
+                        <span class="text-base">➕</span>
+                        <span>حمایت از فرزند معنوی جدید</span>
+                    </a>
                 </div>
 
                 <!-- Active Student Detail & Mentorship Room -->
@@ -1181,6 +987,31 @@ foreach ($available_students as $st) {
                                 <p class="text-xs text-gray-500 leading-relaxed font-bold">پایه تحصیلی: <span class="text-teal-600 font-black"><?php echo htmlspecialchars(($st['grade'] ?: '---') . ' - ' . ($st['field_of_study'] ?: 'عمومی')); ?></span></p>
                                 <p class="text-xs text-gray-500 leading-relaxed">استعدادها: <span class="text-gray-700 font-bold"><?php echo htmlspecialchars($st['talents'] ?: 'علاقه‌مند به ریاضی، فناوری و علوم تجربی'); ?></span></p>
                                 <p class="text-xs text-gray-500 leading-relaxed">آرزوی تحصیلی/شغلی: <span class="text-gray-700 font-bold"><?php echo htmlspecialchars($st['dreams'] ?: 'کسب تخصص و موفقیت در آموزش عالی'); ?></span></p>
+
+                                <?php if (!empty($st['hti_score']) || !empty($st['psych_grade'])): ?>
+                                <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2.5">
+                                    <div class="inline-flex items-center gap-2 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 px-3 py-1.5 rounded-2xl shadow-xs">
+                                        <span class="text-base">🧠</span>
+                                        <div class="text-right">
+                                            <span class="text-[9px] text-teal-700 font-bold block">شاخص استعداد و پتانسیل حکمت (HTI):</span>
+                                            <span class="text-xs font-black text-teal-900 font-mono"><?php echo toFarsi($st['hti_score'] ?: '---'); ?> از ۱۰۰</span>
+                                            <span class="text-[10px] font-black text-emerald-700 mr-1">(گرید شایستگی <?php echo htmlspecialchars($st['psych_grade'] ?: '---'); ?>)</span>
+                                        </div>
+                                    </div>
+                                    <?php if (!empty($st['hermans_score'])): ?>
+                                    <div class="inline-flex items-center gap-1.5 bg-purple-50 text-purple-800 border border-purple-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">
+                                        <span>🔥 انگیزه پیشرفت:</span>
+                                        <span class="font-mono font-black"><?php echo toFarsi($st['hermans_score']); ?> از ۱۱۶</span>
+                                    </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($st['mi_total'])): ?>
+                                    <div class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-800 border border-indigo-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">
+                                        <span>💡 هوش چندگانه:</span>
+                                        <span class="font-mono font-black"><?php echo toFarsi($st['mi_total']); ?> از ۴۰۰</span>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -1299,6 +1130,11 @@ foreach ($available_students as $st) {
                 </div>
 
             </div>
+
+            <!-- Quick Direct Student Selection Grid for Adding More Children -->
+            <div class="mt-12">
+                <?php include 'includes/donor-quick-students.php'; ?>
+            </div>
         <?php endif; ?>
 
     </main>
@@ -1364,6 +1200,12 @@ foreach ($available_students as $st) {
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-2">مبلغ مشارکت (تومان):</label>
                     <div class="grid grid-cols-2 gap-2 mb-3">
+                        <?php if ($total_shares > 0): ?>
+                        <button type="button" @click="donationAmount = '<?php echo ($total_shares * 3000000); ?>'" :class="donationAmount == '<?php echo ($total_shares * 3000000); ?>' ? 'bg-teal-700 text-white font-black border-teal-700 shadow-md' : 'bg-teal-50 text-teal-900 border-teal-300 font-bold'" class="col-span-2 py-2.5 px-3 rounded-xl border text-xs transition-all text-center flex items-center justify-center gap-1.5">
+                            <span>✨</span>
+                            <span>تعهد ماهانه شما: <?php echo toFarsi(number_format($total_shares * 3000000)); ?> تومان (<?php echo toFarsi($total_shares); ?> دانش‌آموز)</span>
+                        </button>
+                        <?php endif; ?>
                         <button type="button" @click="donationAmount = '3000000'" :class="donationAmount == '3000000' ? 'bg-teal-700 text-white font-black border-teal-700 shadow' : 'bg-gray-50 text-gray-700 border-gray-200'" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center">
                             ۳,۰۰۰,۰۰۰ (بورس ۱ ماه)
                         </button>
