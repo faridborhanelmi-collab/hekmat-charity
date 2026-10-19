@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'includes/db.php';
+require_once 'includes/auth.php';
 
 $student_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -48,17 +49,63 @@ if ($donor_id <= 0) {
 $stmt = $pdo->prepare("SELECT count(*) FROM sponsorships WHERE student_id = ? AND status = 'active'");
 $stmt->execute([$student_id]);
 if ($stmt->fetchColumn() > 0) {
-    die("این دانش‌آموز در حال حاضر تحت حمایت قرار گرفته است.");
+    $st_row = $pdo->query("SELECT alias_name FROM students WHERE id = " . (int)$student_id)->fetch();
+    $st_name_disp = $st_row['alias_name'] ?? 'حکمت‌جو';
+    ?>
+    <!DOCTYPE html>
+    <html lang="fa" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>این دانش‌آموز دارای حامی است | بنیاد حکمت</title>
+        <style>
+        @font-face{font-family:'Vazirmatn';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/Vazirmatn-400.woff2') format('woff2')}
+        @font-face{font-family:'Vazirmatn';font-style:normal;font-weight:700;font-display:swap;src:url('/assets/fonts/Vazirmatn-700.woff2') format('woff2')}
+        @font-face{font-family:'Vazirmatn';font-style:normal;font-weight:900;font-display:swap;src:url('/assets/fonts/Vazirmatn-900.woff2') format('woff2')}
+        </style>
+        <link rel="stylesheet" href="/assets/tailwind.min.css">
+    </head>
+    <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4 font-sans" style="font-family: 'Vazirmatn', sans-serif;">
+        <div class="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full text-center border border-gray-100">
+            <div class="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+                🛡️
+            </div>
+            <span class="inline-block px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-full text-xs font-black mb-3">
+                تحت سرپرستی و حمایت
+            </span>
+            <h2 class="text-xl font-black text-gray-900 mb-3"><?php echo htmlspecialchars($st_name_disp); ?> دارای حامی است</h2>
+            <p class="text-gray-600 mb-8 leading-relaxed text-xs">
+                این حکمت‌جوی گرامی در حال حاضر تحت سرپرستی و حمایت معنوی یکی از خیرین بزرگوار بنیاد قرار گرفته است و ظرفیت حمایت ایشان تکمیل می‌باشد.
+            </p>
+            <div class="space-y-3">
+                <a href="campaign.php#students" class="block w-full bg-teal-600 hover:bg-teal-700 text-white font-black py-3.5 rounded-xl transition-all text-xs shadow-md shadow-teal-600/20">
+                    مشاهده سایر دانش‌آموزان چشم‌انتظار حامی ←
+                </a>
+                <a href="donor-dashboard.php" class="block w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors text-xs">
+                    بازگشت به پورتال حامیان
+                </a>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit();
 }
 
-// Fetch student details (alias name)
-$stmt = $pdo->prepare("SELECT alias_name FROM students WHERE id = ?");
+// Fetch student details
+$stmt = $pdo->prepare("SELECT alias_name, name, surname, code FROM students WHERE id = ?");
 $stmt->execute([$student_id]);
 $student = $stmt->fetch();
 if (!$student) {
     die("دانش‌آموز یافت نشد.");
 }
 $alias = $student['alias_name'] ?: 'حکمت‌جو';
+if (function_exists('can_view_student_real_name') && can_view_student_real_name()) {
+    $real_fullName = trim(($student['name'] ?? '') . ' ' . ($student['surname'] ?? ''));
+    if (!empty($real_fullName)) {
+        $alias .= ' (' . $real_fullName . (!empty($student['code']) ? ' - کد ' . toFarsiDigits($student['code']) : '') . ')';
+    }
+}
 
 $success = false;
 

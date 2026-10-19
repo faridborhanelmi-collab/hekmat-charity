@@ -2,13 +2,27 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// تنظیم محدودیت‌های پردازش آپلود در سطح اسکریپت
+@ini_set('upload_max_filesize', '32M');
+@ini_set('post_max_size', '32M');
+@ini_set('memory_limit', '256M');
+
 require_once 'includes/db.php';
 require_once 'includes/auth.php';
 require_once 'includes/SmsService.php';
 
+// بررسی حالت ارسال فایل با حجم بالاتر از post_max_size که باعث پاک شدن کل $_POST و $_FILES می‌شود
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && empty($_POST) && empty($_FILES) && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    die(json_encode([
+        'success' => false,
+        'message' => 'حجم فایل ارسالی فراتر از حد مجاز سرور است. لطفاً فایل کم‌حجم‌تری انتخاب کنید.'
+    ], JSON_UNESCAPED_UNICODE));
+}
+
 // بررسی دسترسی عمومی ادمین/پرسنل
 if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
-    die(json_encode(['success' => false, 'message' => 'دسترسی غیرمجاز. لطفاً وارد سیستم شوید.']));
+    die(json_encode(['success' => false, 'message' => 'دسترسی غیرمجاز. لطفاً وارد سیستم شوید.'], JSON_UNESCAPED_UNICODE));
 }
 
 $action = isset($_POST['action']) ? $_POST['action'] : '';
@@ -19,7 +33,7 @@ if (has_role(['board_member'])) {
     die(json_encode([
         'success' => false, 
         'message' => 'اعضای محترم هیئت مدیره دارای دسترسی نظارتی و فقط خواندنی (Read-Only) می‌باشند و امکان ویرایش یا ثبت اطلاعات را ندارند.'
-    ]));
+    ], JSON_UNESCAPED_UNICODE));
 }
 
 // مسدودسازی اکشن‌های مالی و حذفی برای معاونت آموزش، اپراتور دیتای بچه‌ها و سایرین
@@ -35,29 +49,141 @@ if (in_array($action, $financial_actions, true) && !$is_financial_edit_allowed) 
     die(json_encode([
         'success' => false, 
         'message' => 'شما به دلیل محدودیت دسترسی سازمانی مجاز به عملیات‌های مالی، تغییرات خیرین و حذف پرونده نیستید.'
-    ]));
+    ], JSON_UNESCAPED_UNICODE));
 }
 
-// --- HELPER: Secure File Upload ---
-function handleFileUpload($file, $targetDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'pdf']) {
-    if (!is_dir($targetDir)) {
-        mkdir($targetDir, 0777, true);
+// --- HELPER: Secure File Upload & Optimization ---
+function optimizeUploadedImage($sourcePath, $destinationPath, $extension, $maxDim = 1200, $quality = 85) {
+    try {
+        $img = null;
+        if ($extension === 'jpg' || $extension === 'jpeg' || $extension === 'jfif') {
+            $img = @imagecreatefromjpeg($sourcePath);
+        } elseif ($extension === 'png') {
+            $img = @imagecreatefrompng($sourcePath);
+        } elseif ($extension === 'webp' && function_exists('imagecreatefromwebp')) {
+            $img = @imagecreatefromwebp($sourcePath);
+        }
+        
+        if (!$img) {
+            return false;
+        }
+
+        // اصلاح چرخش خودکار بر اساس داده‌های سنسور دوربین موبایل (EXIF Orientation)
+        if (function_exists('exif_read_data') && ($extension === 'jpg' || $extension === 'jpeg' || $extension === 'jfif')) {
+            $exif = @exif_read_data($sourcePath);
+            if (!empty($exif['Orientation'])) {
+                switch ($exif['Orientation']) {
+                    case 3:
+                        $img = imagerotate($img, 180, 0);
+                        break;
+                    case 6:
+                        $img = imagerotate($img, -90, 0);
+                        break;
+                    case 8:
+                        $img = imagerotate($img, 90, 0);
+                        break;
+                }
+            }
+        }
+
+        $w = imagesx($img);
+        $h = imagesy($img);
+
+        // در صورت بزرگتر بودن ابعاد از حد استاندارد، تصویر کوچک‌تر می‌شود
+        if ($w > $maxDim || $h > $maxDim) {
+            if ($w > $h) {
+                $newW = $maxDim;
+                $newH = (int)round(($h * $maxDim) / $w);
+            } else {
+                $newH = $maxDim;
+                $newW = (int)round(($w * $maxDim) / $h);
+            }
+            $resized = imagecreatetruecolor($newW, $newH);
+            
+            // حفظ ترنسپرنسی برای فایل‌های PNG و WebP
+            if ($extension === 'png' || $extension === 'webp') {
+                imagealphablending($resized, false);
+                imagesavealpha($resized, true);
+            }
+            
+            imagecopyresampled($resized, $img, 0, 0, 0, 0, $newW, $newH, $w, $h);
+            if (PHP_VERSION_ID < 80000) {
+                @imagedestroy($img);
+            }
+            $img = $resized;
+        }
+
+        // ذخیره با کیفیت بالا
+        if ($extension === 'png') {
+            imagepng($img, $destinationPath, 8);
+        } elseif ($extension === 'webp' && function_exists('imagewebp')) {
+            imagewebp($img, $destinationPath, $quality);
+        } else {
+            imagejpeg($img, $destinationPath, $quality);
+        }
+        if (PHP_VERSION_ID < 80000) {
+            @imagedestroy($img);
+        }
+        return true;
+    } catch (\Throwable $t) {
+        return false;
     }
-    $origName = basename($file['name']);
+}
+
+function handleFileUpload($file, $targetDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'pdf', 'webp', 'jfif']) {
+    if (!isset($file) || !is_array($file)) {
+        return ['success' => false, 'message' => 'فایلی جهت بارگذاری دریافت نشد.'];
+    }
+
+    if (isset($file['error']) && $file['error'] !== UPLOAD_ERR_OK) {
+        switch ($file['error']) {
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                return ['success' => false, 'message' => 'حجم فایل بیش از حد مجاز سرور است. لطفاً فایل کم‌حجم‌تری انتخاب کنید.'];
+            case UPLOAD_ERR_PARTIAL:
+                return ['success' => false, 'message' => 'بارگذاری به دلیل افت ارتباط اینترنت ناقص ماند. لطفاً دوباره تلاش کنید.'];
+            case UPLOAD_ERR_NO_FILE:
+                return ['success' => false, 'message' => 'هیچ فایلی برای بارگذاری انتخاب نشده است.'];
+            default:
+                return ['success' => false, 'message' => 'خطای سیستمی در آپلود فایل (کد ' . intval($file['error']) . ').'];
+        }
+    }
+
+    if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        return ['success' => false, 'message' => 'فایل بارگذاری شده موقت نامعتبر است.'];
+    }
+
+    if (!is_dir($targetDir)) {
+        @mkdir($targetDir, 0777, true);
+    }
+    
+    $origName = basename($file['name'] ?? 'file');
     $fileType = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
 
+    // نرمال‌سازی پسوندهای معادل
+    if ($fileType === 'jpeg') $fileType = 'jpg';
+
     if (!in_array($fileType, $allowedTypes, true)) {
-        return ['success' => false, 'message' => 'نوع فایل غیرمجاز است. فقط فایل‌های مجاز پذیرفته می‌شوند.'];
+        return ['success' => false, 'message' => 'نوع فایل غیرمجاز است. فرمت‌های مجاز: ' . implode('، ', $allowedTypes)];
     }
 
-    // نام‌گذاری کاملاً امن و تصادفی برای جلوگیری از Path Traversal و دورزدن پسوندها
+    // نام‌گذاری کاملاً امن و تصادفی برای جلوگیری از تداخل و آسیب‌پذیری‌ها
     $safeFileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $fileType;
     $targetPath = rtrim($targetDir, '/') . '/' . $safeFileName;
+
+    // بهینه‌سازی تصاویر با کتابخانه GD
+    $isImage = in_array($fileType, ['jpg', 'png', 'webp', 'jfif'], true);
+    if ($isImage && extension_loaded('gd')) {
+        $optimized = optimizeUploadedImage($file['tmp_name'], $targetPath, $fileType);
+        if ($optimized) {
+            return ['success' => true, 'path' => $targetPath, 'name' => htmlspecialchars($origName, ENT_QUOTES, 'UTF-8')];
+        }
+    }
 
     if (move_uploaded_file($file['tmp_name'], $targetPath)) {
         return ['success' => true, 'path' => $targetPath, 'name' => htmlspecialchars($origName, ENT_QUOTES, 'UTF-8')];
     }
-    return ['success' => false, 'message' => 'خطا در بارگذاری فایل روی سرور.'];
+    return ['success' => false, 'message' => 'خطا در انتقال و ذخیره فایل روی سرور.'];
 }
 
 function cleanNumber($val) {
@@ -244,6 +370,10 @@ switch ($action) {
         $st_surname = trim($_POST['surname'] ?? '');
 
         try {
+            $alias_name = trim($_POST['alias_name'] ?? '');
+            $talents = trim($_POST['talents'] ?? '');
+            $dreams = trim($_POST['dreams'] ?? '');
+
             if (!$is_financial_edit_allowed) {
                 // اپراتور دیتا (ویانا وحیدی) فقط مجاز به به‌روزرسانی فیلدهای هویتی و تحصیلی است
                 $sql = "UPDATE students SET 
@@ -251,7 +381,8 @@ switch ($action) {
                         father_name = ?, mother_name = ?, birth_place = ?, school = ?, 
                         grade = ?, field_of_study = ?, guardian_phone = ?, address = ?, 
                         items_given = ?, counselor = ?, explanations = ?, language_class = ?, status = ?,
-                        father_job = ?, mother_job = ?
+                        father_job = ?, mother_job = ?,
+                        alias_name = ?, talents = ?, dreams = ?
                         WHERE id = ?";
                 $stmt = $pdo->prepare($sql);
                 $success = $stmt->execute([
@@ -260,6 +391,7 @@ switch ($action) {
                     $_POST['grade'] ?? '', $_POST['field_of_study'] ?? '', $_POST['guardian_phone'] ?? '', $_POST['address'] ?? '', 
                     $_POST['items_given'] ?? '', $_POST['counselor'] ?? '', $_POST['explanations'] ?? '', $_POST['language_class'] ?? '', $_POST['status'] ?? 'active', 
                     $_POST['father_job'] ?? '', $_POST['mother_job'] ?? '',
+                    $alias_name, $talents, $dreams,
                     $id
                 ]);
                 log_activity('ویرایش اطلاعات دانش‌آموز', 'student', $id, "ویرایش اطلاعات هویتی و تحصیلی: {$st_name} {$st_surname}");
@@ -284,7 +416,8 @@ switch ($action) {
                         items_given = ?, counselor = ?, explanations = ?, language_class = ?, notes = ?, status = ?,
                         father_job = ?, mother_job = ?, account_number = ?,
                         bursary_eligible = ?, base_bursary = ?, computer_installment = ?, 
-                        loan_installment = ?, other_deductions = ?, deductions_desc = ?
+                        loan_installment = ?, other_deductions = ?, deductions_desc = ?,
+                        alias_name = ?, talents = ?, dreams = ?
                         WHERE id = ?";
                 $stmt = $pdo->prepare($sql);
                 $success = $stmt->execute([
@@ -295,6 +428,7 @@ switch ($action) {
                     $_POST['father_job'] ?? '', $_POST['mother_job'] ?? '', $_POST['account_number'] ?? '',
                     $bursary_eligible, $base_bursary, $computer_installment, 
                     $loan_installment, $other_deductions, $deductions_desc,
+                    $alias_name, $talents, $dreams,
                     $id
                 ]);
                 log_activity('ویرایش کامل پرونده دانش‌آموز', 'student', $id, "ویرایش کامل پرونده و بخش مالی دانش‌آموز: {$st_name} {$st_surname}");
@@ -319,32 +453,55 @@ switch ($action) {
         break;
 
     case 'upload_photo':
-        $type = $_POST['owner_type']; // 'student' or 'donor'
-        $id = (int)$_POST['owner_id'];
-        $res = handleFileUpload($_FILES['photo'], 'uploads/photos/', ['jpg', 'jpeg', 'png']);
+        $type = $_POST['owner_type'] ?? ''; // 'student' or 'donor'
+        $id = (int)($_POST['owner_id'] ?? 0);
+        
+        if (!in_array($type, ['student', 'donor'], true) || $id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'اطلاعات گیرنده نامعتبر است.']);
+            break;
+        }
+
+        $res = handleFileUpload($_FILES['photo'] ?? null, 'uploads/photos/', ['jpg', 'jpeg', 'png', 'webp', 'jfif']);
         
         if ($res['success']) {
             $table = ($type === 'student') ? 'students' : 'donors';
+            
+            // حذف تصویر قبلی در صورت وجود برای جلوگیری از انباشت فایل‌های تکراری
+            try {
+                $old_stmt = $pdo->prepare("SELECT photo_path FROM $table WHERE id = ?");
+                $old_stmt->execute([$id]);
+                $prev_path = $old_stmt->fetchColumn();
+                if ($prev_path && file_exists($prev_path) && strpos($prev_path, 'uploads/photos/') === 0) {
+                    @unlink($prev_path);
+                }
+            } catch (\Throwable $e) {}
+
             $stmt = $pdo->prepare("UPDATE $table SET photo_path = ? WHERE id = ?");
             $stmt->execute([$res['path'], $id]);
             log_activity('آپلود تصویر پرتره', $type, $id, "بارگذاری عکس پرتره برای {$type} شناسه {$id}");
-            echo json_encode(['success' => true, 'path' => $res['path']]);
+            echo json_encode(['success' => true, 'path' => $res['path'], 'message' => 'تصویر با موفقیت ذخیره شد.']);
         } else {
             echo json_encode($res);
         }
         break;
 
     case 'upload_document':
-        $owner_type = $_POST['owner_type'];
-        $owner_id = (int)$_POST['owner_id'];
-        $desc = $_POST['description'] ?? 'مدرک پیوست';
-        $res = handleFileUpload($_FILES['document'], 'uploads/docs/', ['jpg', 'jpeg', 'png', 'pdf', 'docx']);
+        $owner_type = $_POST['owner_type'] ?? '';
+        $owner_id = (int)($_POST['owner_id'] ?? 0);
+        $desc = trim($_POST['description'] ?? 'مدرک پیوست');
+        
+        if (!in_array($owner_type, ['student', 'donor'], true) || $owner_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'اطلاعات پرونده جهت بارگذاری مدرک نامعتبر است.']);
+            break;
+        }
+
+        $res = handleFileUpload($_FILES['document'] ?? null, 'uploads/docs/', ['jpg', 'jpeg', 'png', 'pdf', 'docx', 'doc', 'webp', 'jfif']);
         
         if ($res['success']) {
             $stmt = $pdo->prepare("INSERT INTO documents (owner_type, owner_id, file_path, file_name, upload_date, description) VALUES (?, ?, ?, ?, ?, ?)");
             $stmt->execute([$owner_type, $owner_id, $res['path'], $res['name'], date('Y-m-d H:i:s'), $desc]);
             log_activity('آپلود مدرک/کارنامه', $owner_type, $owner_id, "آپلود فایل {$res['name']} ({$desc})");
-            echo json_encode(['success' => true]);
+            echo json_encode(['success' => true, 'message' => 'مدرک با موفقیت بارگذاری و ثبت شد.']);
         } else {
             echo json_encode($res);
         }

@@ -1,10 +1,13 @@
 <?php
 session_start();
 require_once 'includes/db.php';
+require_once 'includes/auth.php';
+
+$can_view_real_name = function_exists('can_view_student_real_name') && can_view_student_real_name();
 
 // Fetch students for sponsorship grid
 $stmt = $pdo->query("
-    SELECT s.id, s.alias_name, s.name, s.gender, s.grade, s.field_of_study, s.address, s.talents, s.notes, s.explanations, s.dreams,
+    SELECT s.id, s.code, s.alias_name, s.name, s.surname, s.gender, s.grade, s.field_of_study, s.address, s.talents, s.notes, s.explanations, s.dreams,
            (SELECT count(*) FROM sponsorships spon WHERE spon.student_id = s.id AND spon.status = 'active') as is_sponsored,
            sp.final_grade, sp.hermans_grade, sp.hermans_score, sp.eq_grade, sp.eq_total, sp.hti_score, sp.mi_grade
     FROM students s
@@ -271,121 +274,216 @@ $page_desc = 'در پویش حکمت‌یار با پرداخت ماهیانه �
     <!-- Students Grid Section -->
     <section id="students" class="py-24 relative">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="text-center max-w-3xl mx-auto mb-16">
+            <div class="text-center max-w-3xl mx-auto mb-10">
                 <h2 class="text-3xl md:text-4xl font-black text-white mb-6">دانش‌آموزان چشم‌انتظار حمایت شما</h2>
                 <p class="text-gray-400 text-lg leading-relaxed">
                     با کلیک روی دکمه «انتخاب برای حمایت»، می‌توانید مسیر زندگی یکی از این نخبگان را تغییر دهید.
-                    (برای حفظ حریم خصوصی، نام‌های واقعی نمایش داده نمی‌شوند)
+                    (برای حفظ حریم خصوصی، نام‌های واقعی برای عموم نمایش داده نمی‌شوند)
                 </p>
+                <?php if ($can_view_real_name): ?>
+                    <div class="mt-6 inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-sm font-bold shadow-lg shadow-emerald-500/10">
+                        <span class="text-xl">👁️</span>
+                        <span>دسترسی مدیریت فعال است (<?= htmlspecialchars($_SESSION['user_name'] ?? 'مدیریت بنیاد') ?>): نام و مشخصات کامل دانش‌آموزان همراه با دکمه ویرایش مستقیم پرونده برای شما نمایان است.</span>
+                    </div>
+                <?php else: ?>
+                    <div class="mt-4 text-xs text-gray-500">
+                        مسئولین بنیاد (مدیرعامل / منشی): <a href="login.php?redirect=<?php echo urlencode('/campaign.php#students'); ?>" class="text-teal-400 hover:underline font-bold">جهت مشاهده هویت واقعی و ویرایش پرونده‌ها، وارد شوید</a>
+                    </div>
+                <?php endif; ?>
             </div>
 
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Instant Search Box -->
+            <div class="max-w-xl mx-auto mb-12">
+                <div class="relative">
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
+                    <input type="text" id="studentSearch" onkeyup="filterCampaignStudents()" placeholder="<?php echo $can_view_real_name ? 'جستجوی سریع مددجو (مثلاً: حکمت‌جو ۱۰۰، زینب، ۳۶۴، تجربی، نهم...)' : 'جستجوی سریع در پویش (مثلاً: حکمت‌جو ۱۰۰، نهم، تجربی...)'; ?>" class="w-full bg-gray-800/80 border border-white/10 rounded-2xl pr-12 pl-4 py-3.5 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all shadow-inner">
+                    <span id="searchResultCount" class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hidden"></span>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="studentsGrid">
                 <?php foreach ($students as $student): 
                     $is_sponsored = $student['is_sponsored'] > 0;
                     $gender = getGenderFromName($student['name'], $student['gender'] ?? null);
                     $avatar = $gender == 'پسر' ? '👦' : '👧';
-                    $bg_class = $is_sponsored ? 'opacity-60 grayscale cursor-not-allowed border-gray-700' : 'hover:border-teal-500 hover:shadow-teal-500/20 transform hover:-translate-y-1 transition-all duration-300 border-white/10';
+                    $bg_class = $is_sponsored ? 'opacity-70 grayscale-[30%] border-gray-700' : 'hover:border-teal-500 hover:shadow-teal-500/20 transform hover:-translate-y-1 transition-all duration-300 border-white/10';
+                    
+                    // Search terms for client-side instant filtering (Real name included only if authorized)
+                    $raw_search = trim(
+                        ($student['alias_name'] ?? '') . ' ' .
+                        ($can_view_real_name ? (($student['name'] ?? '') . ' ' . ($student['surname'] ?? '') . ' ' . ($student['code'] ?? '') . ' ' . ($student['id'] ?? '')) : '') . ' ' .
+                        ($student['grade'] ?? '') . ' ' .
+                        ($student['field_of_study'] ?? '')
+                    );
+                    $search_data = mb_strtolower($raw_search) . ' ' . toEnglishDigits(mb_strtolower($raw_search));
                 ?>
-                <div class="glass rounded-3xl p-6 border <?php echo $bg_class; ?> relative overflow-hidden group">
+                <div class="student-card glass rounded-3xl p-6 border <?php echo $bg_class; ?> relative overflow-hidden group flex flex-col justify-between" data-search="<?php echo htmlspecialchars($search_data); ?>">
                     <?php if ($is_sponsored): ?>
-                        <div class="absolute inset-0 bg-gray-950/70 z-10 flex items-center justify-center backdrop-blur-[3px]">
-                            <div class="bg-amber-500/90 text-white px-5 py-2 rounded-full font-black text-sm rotate-6 border border-amber-300/40 shadow-2xl flex items-center gap-1.5">
+                        <div class="absolute inset-0 bg-gray-950/80 z-10 flex flex-col items-center justify-center p-4 backdrop-blur-[2px] pointer-events-none">
+                            <div class="bg-amber-500/95 text-white px-5 py-2 rounded-full font-black text-sm rotate-3 border border-amber-300/40 shadow-2xl flex items-center gap-1.5 mb-2 pointer-events-auto">
                                 <span>🛡️</span>
                                 <span>تحت پوشش خیّر (تکمیل ظرفیت)</span>
                             </div>
+                            <?php if ($can_view_real_name): ?>
+                                <div class="mt-2 bg-gray-900/95 border border-emerald-500/50 rounded-2xl p-4 text-center pointer-events-auto shadow-2xl max-w-[92%] backdrop-blur-md">
+                                    <div class="text-[11px] text-emerald-400 font-bold mb-1 flex items-center justify-center gap-1">
+                                        <span>👤</span>
+                                        <span>مشخصات اصلی (مدیریت):</span>
+                                    </div>
+                                    <div class="text-white font-black text-base mb-1">
+                                        <?php echo htmlspecialchars(trim(($student['name'] ?? '') . ' ' . ($student['surname'] ?? ''))); ?>
+                                    </div>
+                                    <div class="text-[11px] text-gray-300 mb-3 flex items-center justify-center gap-2">
+                                        <?php if (!empty($student['code'])): ?>
+                                            <span>کد: <strong class="font-mono text-amber-300"><?php echo htmlspecialchars(toFarsiDigits($student['code'])); ?></strong></span>
+                                            <span>•</span>
+                                        <?php endif; ?>
+                                        <span>شناسه: <strong class="font-mono text-teal-300"><?php echo $student['id']; ?></strong></span>
+                                    </div>
+                                    <div class="flex items-center justify-center gap-2 flex-wrap">
+                                        <a href="person-detail.php?id=<?php echo $student['id']; ?>&edit=1" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-black text-xs transition-all shadow-md shadow-amber-500/20 hover:scale-105">
+                                            <span>✏️</span>
+                                            <span>تکمیل و ویرایش پرونده</span>
+                                        </a>
+                                        <a href="interview-dossier.php?student_id=<?php echo $student['id']; ?>" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 font-bold text-xs transition-colors">
+                                            <span>📊</span>
+                                            <span>تست‌ها</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                     
-                    <div class="flex items-start justify-between mb-3 relative z-0">
-                        <div class="flex items-center gap-3.5">
-                            <div class="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-3xl shadow-inner border border-gray-700 shrink-0">
-                                <?php echo $avatar; ?>
-                            </div>
-                            <div>
-                                <div class="text-xl font-black text-white"><?php echo htmlspecialchars((string)($student['alias_name'] ?: 'حکمت‌جو')); ?></div>
-                                <div class="text-teal-400 text-sm font-bold mt-1"><?php echo htmlspecialchars((string)$student['grade']); ?> • <?php echo $gender; ?></div>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-end gap-1 shrink-0">
-                            <?php if (!empty($student['hti_score'])): ?>
-                                <div class="bg-gradient-to-r from-amber-500/20 to-teal-500/20 border border-teal-500/40 text-teal-300 px-2.5 py-0.5 rounded-lg text-[11px] font-black font-mono">
-                                    HTI: <?php echo toFarsiDigits($student['hti_score']); ?>
+                    <div>
+                        <div class="flex items-start justify-between mb-3 relative z-0">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-3xl shadow-inner border border-gray-700 shrink-0">
+                                    <?php echo $avatar; ?>
                                 </div>
-                            <?php endif; ?>
-                            <?php if ($student['final_grade']): ?>
-                                <div class="bg-primary-900/50 border border-primary-500/30 text-primary-300 px-2.5 py-0.5 rounded-lg text-xs font-black">
-                                    سطح <?php echo htmlspecialchars((string)$student['final_grade']); ?>
+                                <div>
+                                    <div class="text-xl font-black text-white flex items-center gap-2 flex-wrap">
+                                        <span><?php echo htmlspecialchars((string)($student['alias_name'] ?: 'حکمت‌جو')); ?></span>
+                                    </div>
+                                    <?php if ($can_view_real_name): ?>
+                                        <div class="mt-1 flex items-center gap-1.5 flex-wrap">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-black text-xs shadow-sm" title="نام و مشخصات واقعی مددجو">
+                                                <span>👤</span>
+                                                <span><?php echo htmlspecialchars(trim(($student['name'] ?? '') . ' ' . ($student['surname'] ?? ''))); ?></span>
+                                            </span>
+                                            <?php if (!empty($student['code'])): ?>
+                                                <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-gray-800 border border-gray-700 text-gray-300 font-mono text-[10px]" title="کد پرونده">
+                                                    <span>کد:</span>
+                                                    <span><?php echo htmlspecialchars(toFarsiDigits($student['code'])); ?></span>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="text-teal-400 text-sm font-bold mt-1"><?php echo htmlspecialchars((string)$student['grade']); ?> • <?php echo $gender; ?></div>
                                 </div>
+                            </div>
+                            <div class="flex flex-col items-end gap-1 shrink-0">
+                                <?php if (!empty($student['hti_score'])): ?>
+                                    <div class="bg-gradient-to-r from-amber-500/20 to-teal-500/20 border border-teal-500/40 text-teal-300 px-2.5 py-0.5 rounded-lg text-[11px] font-black font-mono">
+                                        HTI: <?php echo toFarsiDigits($student['hti_score']); ?>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if ($student['final_grade']): ?>
+                                    <div class="bg-primary-900/50 border border-primary-500/30 text-primary-300 px-2.5 py-0.5 rounded-lg text-xs font-black">
+                                        سطح <?php echo htmlspecialchars((string)$student['final_grade']); ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Psychometric Highlights (EQ & Motivation) -->
+                        <?php if (!empty($student['hermans_grade']) || !empty($student['hermans_score']) || !empty($student['eq_grade'])): ?>
+                        <div class="flex flex-wrap items-center gap-1.5 mb-4 relative z-0">
+                            <?php if (!empty($student['hermans_score']) || !empty($student['hermans_grade'])): ?>
+                                <span class="inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 px-2 py-0.5 rounded-lg text-[11px] font-bold">
+                                    <span>🚀</span>
+                                    <span>انگیزه: <?php echo htmlspecialchars((string)($student['hermans_grade'] ?: toFarsiDigits($student['hermans_score']) . '/۱۱۶')); ?></span>
+                                </span>
+                            <?php endif; ?>
+                            <?php if (!empty($student['eq_grade'])): ?>
+                                <span class="inline-flex items-center gap-1 bg-rose-500/10 border border-rose-500/30 text-rose-300 px-2 py-0.5 rounded-lg text-[11px] font-bold">
+                                    <span>❤️</span>
+                                    <span>هوش هیجانی (EQ): <?php echo htmlspecialchars((string)$student['eq_grade']); ?></span>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="space-y-3 mb-6 relative z-0">
+                            <?php if (!empty($student['field_of_study'])): ?>
+                            <div class="flex items-center gap-2 text-sm text-gray-300">
+                                <span class="text-gray-500 text-xs shrink-0">📚 رشته/پایه:</span>
+                                <span class="font-bold text-gray-200"><?php echo htmlspecialchars((string)$student['field_of_study']); ?></span>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if (!empty($student['address'])): 
+                                $area = mb_substr($student['address'], 0, 30) . '...';
+                            ?>
+                            <div class="flex items-center gap-2 text-sm text-gray-300">
+                                <span class="text-gray-500 text-xs shrink-0">📍 محدوده:</span>
+                                <span class="font-bold text-gray-200"><?php echo htmlspecialchars((string)$area); ?></span>
+                            </div>
+                            <?php endif; ?>
+
+                            <?php if (!empty($student['talents'])): ?>
+                            <div class="flex items-start gap-2 text-sm text-gray-300">
+                                <span class="text-gray-500 text-xs mt-0.5 shrink-0">✨ استعدادها:</span>
+                                <span class="font-medium text-gold-400 leading-relaxed text-xs"><?php echo htmlspecialchars((string)$student['talents']); ?></span>
+                            </div>
+                            <?php endif; ?>
+
+                            <?php if (!empty($student['dreams'])): ?>
+                            <div class="flex items-start gap-2 text-sm text-gray-300">
+                                <span class="text-gray-500 text-xs mt-0.5 shrink-0">🎯 هدف آینده:</span>
+                                <span class="font-medium text-teal-300/90 leading-relaxed text-xs"><?php echo htmlspecialchars((string)$student['dreams']); ?></span>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if (!empty($student['explanations'])): ?>
+                            <div class="flex items-start gap-2 text-sm text-gray-300 bg-gray-950/40 p-3 rounded-2xl border border-white/5">
+                                <span class="text-gray-400 text-xs mt-0.5 shrink-0">💬 نظر مدیر:</span>
+                                <span class="font-normal text-gray-300 leading-relaxed text-xs italic border-r-2 border-primary-500/50 pr-2"><?php echo htmlspecialchars((string)$student['explanations']); ?></span>
+                            </div>
                             <?php endif; ?>
                         </div>
                     </div>
 
-                    <!-- Psychometric Highlights (EQ & Motivation) -->
-                    <?php if (!empty($student['hermans_grade']) || !empty($student['hermans_score']) || !empty($student['eq_grade'])): ?>
-                    <div class="flex flex-wrap items-center gap-1.5 mb-4 relative z-0">
-                        <?php if (!empty($student['hermans_score']) || !empty($student['hermans_grade'])): ?>
-                            <span class="inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 px-2 py-0.5 rounded-lg text-[11px] font-bold">
-                                <span>🚀</span>
-                                <span>انگیزه: <?php echo htmlspecialchars((string)($student['hermans_grade'] ?: toFarsiDigits($student['hermans_score']) . '/۱۱۶')); ?></span>
-                            </span>
-                        <?php endif; ?>
-                        <?php if (!empty($student['eq_grade'])): ?>
-                            <span class="inline-flex items-center gap-1 bg-rose-500/10 border border-rose-500/30 text-rose-300 px-2 py-0.5 rounded-lg text-[11px] font-bold">
-                                <span>❤️</span>
-                                <span>هوش هیجانی (EQ): <?php echo htmlspecialchars((string)$student['eq_grade']); ?></span>
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                    <?php endif; ?>
+                    <div>
+                        <div class="relative z-0">
+                            <?php if (!$is_sponsored): ?>
+                                <a href="sponsor-student.php?id=<?php echo $student['id']; ?>" class="block w-full text-center bg-teal-600 hover:bg-teal-500 text-white font-black py-3 rounded-xl transition-all shadow-lg hover:shadow-teal-500/20">
+                                    انتخاب برای حمایت
+                                </a>
+                            <?php else: ?>
+                                <button disabled class="block w-full text-center bg-gray-800/80 text-gray-400 font-bold py-3 rounded-xl cursor-not-allowed border border-gray-700/60">
+                                    تکمیل ظرفیت (تحت سرپرستی خیّر)
+                                </button>
+                            <?php endif; ?>
+                        </div>
 
-                    <div class="space-y-3 mb-6 relative z-0">
-                        <?php if (!empty($student['field_of_study'])): ?>
-                        <div class="flex items-center gap-2 text-sm text-gray-300">
-                            <span class="text-gray-500 text-xs shrink-0">📚 رشته/پایه:</span>
-                            <span class="font-bold text-gray-200"><?php echo htmlspecialchars((string)$student['field_of_study']); ?></span>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if (!empty($student['address'])): 
-                            $area = mb_substr($student['address'], 0, 30) . '...';
-                        ?>
-                        <div class="flex items-center gap-2 text-sm text-gray-300">
-                            <span class="text-gray-500 text-xs shrink-0">📍 محدوده:</span>
-                            <span class="font-bold text-gray-200"><?php echo htmlspecialchars((string)$area); ?></span>
-                        </div>
-                        <?php endif; ?>
-
-                        <?php if (!empty($student['talents'])): ?>
-                        <div class="flex items-start gap-2 text-sm text-gray-300">
-                            <span class="text-gray-500 text-xs mt-0.5 shrink-0">✨ استعدادها:</span>
-                            <span class="font-medium text-gold-400 leading-relaxed text-xs"><?php echo htmlspecialchars((string)$student['talents']); ?></span>
-                        </div>
-                        <?php endif; ?>
-
-                        <?php if (!empty($student['dreams'])): ?>
-                        <div class="flex items-start gap-2 text-sm text-gray-300">
-                            <span class="text-gray-500 text-xs mt-0.5 shrink-0">🎯 هدف آینده:</span>
-                            <span class="font-medium text-teal-300/90 leading-relaxed text-xs"><?php echo htmlspecialchars((string)$student['dreams']); ?></span>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if (!empty($student['explanations'])): ?>
-                        <div class="flex items-start gap-2 text-sm text-gray-300 bg-gray-950/40 p-3 rounded-2xl border border-white/5">
-                            <span class="text-gray-400 text-xs mt-0.5 shrink-0">💬 نظر مدیر:</span>
-                            <span class="font-normal text-gray-300 leading-relaxed text-xs italic border-r-2 border-primary-500/50 pr-2"><?php echo htmlspecialchars((string)$student['explanations']); ?></span>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="relative z-0">
-                        <?php if (!$is_sponsored): ?>
-                            <a href="sponsor-student.php?id=<?php echo $student['id']; ?>" class="block w-full text-center bg-teal-600 hover:bg-teal-500 text-white font-black py-3 rounded-xl transition-all shadow-lg hover:shadow-teal-500/20">
-                                انتخاب برای حمایت
-                            </a>
-                        <?php else: ?>
-                            <button disabled class="block w-full text-center bg-gray-800/80 text-gray-400 font-bold py-3 rounded-xl cursor-not-allowed border border-gray-700/60">
-                                تکمیل ظرفیت (تحت سرپرستی خیّر)
-                            </button>
+                        <?php if ($can_view_real_name && !$is_sponsored): ?>
+                            <div class="mt-3 pt-3 border-t border-emerald-500/20 flex items-center justify-between gap-2 relative z-0">
+                                <div class="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+                                    <span>⚙️</span>
+                                    <span>مدیریت:</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <a href="person-detail.php?id=<?php echo $student['id']; ?>&edit=1" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-black text-xs transition-all shadow-md shadow-amber-500/20 hover:scale-[1.03]" title="ویرایش و تکمیل فوری مشخصات این مددجو در پرونده اصلی">
+                                        <span>✏️</span>
+                                        <span>تکمیل و ویرایش پرونده</span>
+                                    </a>
+                                    <a href="interview-dossier.php?student_id=<?php echo $student['id']; ?>" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 font-bold text-xs transition-colors" title="مشاهده کارنامه جامع روانسنجی و مصاحبه">
+                                        <span>📊</span>
+                                        <span>تست‌ها</span>
+                                    </a>
+                                </div>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -445,6 +543,36 @@ $page_desc = 'در پویش حکمت‌یار با پرداخت ماهیانه �
         });
 
         document.querySelectorAll('.glass').forEach((el) => observer.observe(el));
+
+        function filterCampaignStudents() {
+            const input = document.getElementById('studentSearch');
+            if (!input) return;
+            const rawVal = input.value.trim().toLowerCase();
+            // تبدیل ارقام فارسی به انگلیسی برای مقایسه انعطاف‌پذیر
+            const query = rawVal.replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+            const cards = document.querySelectorAll('.student-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const searchData = (card.getAttribute('data-search') || '').toLowerCase();
+                if (!rawVal || searchData.includes(rawVal) || searchData.includes(query)) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            const countBadge = document.getElementById('searchResultCount');
+            if (countBadge) {
+                if (rawVal) {
+                    countBadge.innerText = visibleCount + ' مورد یافت شد';
+                    countBadge.classList.remove('hidden');
+                } else {
+                    countBadge.classList.add('hidden');
+                }
+            }
+        }
     </script>
 
 <script>

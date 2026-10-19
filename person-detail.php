@@ -35,11 +35,12 @@ if (!$person) {
     die("پرونده مورد نظر یافت نشد.");
 }
 
-$is_admin = isset($_SESSION['is_admin']) && $_SESSION['is_admin'];
+$is_read_only = is_read_only();
+$is_admin = has_role(['superadmin', 'secretary', 'admin']) || (!empty($_SESSION['is_admin']) && !$is_read_only);
+$can_edit = has_role(['superadmin', 'secretary', 'admin']) || ($is_admin && !$is_read_only);
 $can_finance = can_access_financial();
 $can_psychology = can_view_psychology();
 $can_admin_notes = can_view_admin_notes();
-$is_read_only = is_read_only();
 
 // پرونده روانشناسی فقط و فقط برای مدیرعامل (فرید علمی) لود می‌شود
 $psychology = null;
@@ -62,6 +63,9 @@ $expenses = $exp_stmt->fetchAll();
 $total_expenses = $pdo->prepare("SELECT SUM(amount) FROM expenses WHERE student_id = ?");
 $total_expenses->execute([$id]);
 $total_expense_sum = $total_expenses->fetchColumn() ?: 0;
+
+// Fetch Expense Categories
+$categories = $pdo->query("SELECT * FROM expense_categories ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch Book Requests
 $book_stmt = $pdo->prepare("SELECT * FROM student_book_requests WHERE student_id = ? ORDER BY id DESC");
@@ -121,7 +125,7 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="manifest" href="manifest.json">
 <body class="bg-gray-50 font-sans text-gray-800 antialiased" x-data="{ 
-    showEditModal: false, 
+    showEditModal: <?php echo (!empty($_GET['edit']) && $can_edit) ? 'true' : 'false'; ?>, 
     showDocModal: false, 
     showExpenseModal: false, 
     activeCat: 'all', 
@@ -160,19 +164,45 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-gray-100 flex flex-col justify-center text-center relative overflow-hidden group h-full">
                     <div class="absolute -left-20 -bottom-20 w-64 h-64 bg-teal-50 rounded-full blur-3xl group-hover:scale-110 transition-transform"></div>
                     
-                    <div class="relative w-48 h-48 mx-auto mb-8 group/img cursor-pointer overflow-hidden rounded-[2.8rem] border-4 border-white shadow-2xl">
+                    <div onclick="triggerPhotoUpload()" class="relative w-48 h-48 mx-auto mb-4 group/img cursor-pointer overflow-hidden rounded-[2.8rem] border-4 border-white shadow-2xl bg-teal-50">
                         <div class="absolute inset-0 bg-gradient-to-tr from-primary-600 to-primary-400 rotate-3 opacity-20"></div>
-                        <img id="profileImg" src="<?php echo $person['photo_path'] ?: 'https://ui-avatars.com/api/?name=' . $person['name'] . '&background=14b8a6&color=fff&size=200'; ?>" 
+                        <img id="profileImg" src="<?php echo $person['photo_path'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($person['name'] . ' ' . $person['surname']) . '&background=14b8a6&color=fff&size=200'; ?>" 
                              class="relative w-full h-full object-cover">
                         
-                        <?php if ($is_admin): ?>
-                        <div class="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
+                        <!-- لایه لودینگ هنگام بارگذاری عکس -->
+                        <div id="photoLoading" class="absolute inset-0 bg-primary-900/80 backdrop-blur-sm text-white flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 z-20">
+                            <svg class="animate-spin h-8 w-8 text-white mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span class="text-xs font-bold text-white">در حال پردازش و آپلود...</span>
+                        </div>
+
+                        <?php if ($can_edit): ?>
+                        <!-- نشانگر دائم دوربین در گوشه عکس (ویژه نمایش در ویندوز، موبایل و تبلت) -->
+                        <div class="absolute bottom-2 left-2 w-10 h-10 rounded-2xl bg-teal-600/90 text-white flex items-center justify-center shadow-lg backdrop-blur-sm border border-white/30 z-10 pointer-events-none">
+                            <span class="text-lg">📷</span>
+                        </div>
+
+                        <!-- لایه هاور دسکتاپ -->
+                        <div class="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none z-10">
                             <span class="text-3xl mb-1">📸</span>
-                            <span class="text-[10px] font-bold text-white">تغییر تصویر</span>
-                            <input type="file" @change="uploadPhoto($event)" class="absolute inset-0 opacity-0 cursor-pointer">
+                            <span class="text-[11px] font-bold text-white">تغییر تصویر چهره</span>
                         </div>
                         <?php endif; ?>
                     </div>
+
+                    <?php if ($can_edit): ?>
+                    <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/jpg" onchange="uploadPhotoNative(this)" style="display:none !important;">
+
+                    <!-- دکمه مشخص و مستقیم جهت بارگذاری عکس پرتره چهره -->
+                    <div class="mb-6 flex justify-center">
+                        <button type="button" onclick="triggerPhotoUpload()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/80 rounded-2xl text-xs font-black cursor-pointer shadow-sm active:scale-95 transition-all">
+                            <span class="text-base">📸</span>
+                            <span>بارگذاری تصویر چهره دانش‌آموز</span>
+                        </button>
+                    </div>
+                    <?php endif; ?>
                     
                     <h1 class="text-3xl font-black text-primary-900 mb-2 leading-tight"><?php echo htmlspecialchars((string)$person['name'] . ' ' . $person['surname']); ?></h1>
                     <?php
@@ -268,8 +298,15 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <?php endforeach; ?>
                         </div>
                         
-                        <?php if ($is_admin): ?>
-                        <button @click="showDocModal = true" class="w-full py-4 border-2 border-dashed border-white/10 rounded-[1.5rem] text-[11px] text-white/40 font-black hover:border-teal-500 hover:text-teal-400 hover:bg-teal-500/5 transition-all mb-4">+ بارگذاری مدرک جدید</button>
+                        <?php if ($can_edit): ?>
+                        <button type="button" 
+                                id="openDocModalBtn"
+                                @click.stop="showDocModal = true" 
+                                onclick="openDocModal();"
+                                class="w-full py-4 border-2 border-dashed border-teal-400/30 bg-white/5 rounded-[1.5rem] text-xs text-teal-300 font-black hover:border-teal-400 hover:text-white hover:bg-teal-500/20 active:scale-98 transition-all mb-4 flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+                            <span class="text-base">📁</span>
+                            <span>+ بارگذاری مدرک یا کارنامه جدید</span>
+                        </button>
                         <?php endif; ?>
                     </div>
 
@@ -567,23 +604,26 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="w-14 h-14 bg-teal-500/20 border border-teal-400/30 rounded-2xl flex items-center justify-center text-3xl shadow-inner shrink-0">🧠</div>
                         <div>
                             <div class="inline-flex items-center gap-2 bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-0.5 rounded-full text-[10px] font-black tracking-wide mb-1">
-                                🔒 محرمانه پزشکی / روانی | منحصراً دسترسی مدیرعامل
+                                🔒 محرمانه روان‌سنجی | دسترسی مدیریت، معاونت آموزش و دبیر اجرایی
                             </div>
                             <h3 class="text-xl md:text-2xl font-black text-white">پروفایل جامع روانشناختی و استعدادیابی</h3>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
+                        <a href="admin-psychology-comparison.php" class="text-xs text-white bg-indigo-600 hover:bg-indigo-500 px-3.5 py-2 rounded-2xl border border-indigo-400/30 transition flex items-center gap-1.5 font-bold shadow-md">
+                            <span>⚖️</span>
+                            <span>رادار مقایسه نخبگان</span>
+                        </a>
                         <a href="interview-dossier.php?student_id=<?php echo $person['id']; ?>" target="_blank" class="text-xs text-white bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 px-4 py-2 rounded-2xl border border-teal-400/30 transition flex items-center gap-1.5 font-bold shadow-lg shadow-teal-500/20">
                             <span>📋</span>
                             <span>پرونده تحلیلی و رادار چارت (A4)</span>
                         </a>
-                        <a href="admin-interview-tests.php" class="text-xs text-teal-300 hover:text-white bg-teal-500/20 hover:bg-teal-500/40 px-3.5 py-2 rounded-2xl border border-teal-500/30 transition flex items-center gap-1.5 font-bold shadow-sm">
-                            <span>📱</span>
-                            <span>سامانه آزمون مصاحبه</span>
-                        </a>
-                        <span class="text-xs text-teal-300 font-bold bg-white/5 px-4 py-2 rounded-2xl border border-white/10">
-                            گرید نهایی ارزیابی: <strong class="text-white text-base mr-1"><?php echo htmlspecialchars((string)($psychology['final_grade'] ?: '---')); ?></strong>
-                        </span>
+                        <div class="text-xs text-teal-300 font-bold bg-white/5 px-4 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
+                            <span>شاخص کل پتانسیل حکمت (HTI):</span>
+                            <strong class="text-emerald-300 text-lg font-mono font-black"><?php echo htmlspecialchars((string)($psychology['hti_score'] !== null ? $psychology['hti_score'] : '---')); ?></strong>
+                            <span class="text-white/60 text-[11px]">/ ۱۰۰</span>
+                            <span class="bg-teal-500/30 text-emerald-200 px-2 py-0.5 rounded-md text-xs font-black">گرید <?php echo htmlspecialchars((string)($psychology['final_grade'] ?: '---')); ?></span>
+                        </div>
                     </div>
                 </div>
 
@@ -824,6 +864,10 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="text" name="surname" value="<?php echo htmlspecialchars((string)$person['surname']); ?>" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500">
                 </div>
                 <div>
+                    <label class="text-[10px] font-bold text-teal-600 block mb-1 px-2">نام مستعار / نمایش در پویش حکمت‌یار (مثلاً: حکمت‌جو ۱۰۰)</label>
+                    <input type="text" name="alias_name" value="<?php echo htmlspecialchars((string)($person['alias_name'] ?? '')); ?>" class="w-full bg-teal-50/50 border border-teal-200 rounded-2xl px-4 py-3 text-sm font-bold text-teal-900 focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div>
                     <label class="text-[10px] font-bold text-gray-400 block mb-1 px-2">شماره تماس</label>
                     <input type="text" name="phone" value="<?php echo htmlspecialchars((string)$person['phone']); ?>" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500">
                 </div>
@@ -966,6 +1010,14 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
                     <label class="text-[10px] font-bold text-gray-400 block mb-1 px-2">توضیحات تکمیلی</label>
                     <textarea name="explanations" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 h-24"><?php echo htmlspecialchars((string)$person['explanations']); ?></textarea>
                 </div>
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-amber-600 block mb-1 px-2">استعدادها و مهارت‌های ویژه (نمایش در پویش حکمت‌یار)</label>
+                    <textarea name="talents" class="w-full bg-amber-50/40 border border-amber-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-amber-500 h-20 text-gray-800 font-medium"><?php echo htmlspecialchars((string)($person['talents'] ?? '')); ?></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-teal-600 block mb-1 px-2">آرزوها و هدف آینده (نمایش در پویش حکمت‌یار)</label>
+                    <textarea name="dreams" class="w-full bg-teal-50/40 border border-teal-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 h-20 text-gray-800 font-medium"><?php echo htmlspecialchars((string)($person['dreams'] ?? '')); ?></textarea>
+                </div>
                 
                 <div class="md:col-span-2">
                     <button type="button" @click="saveProfile()" class="w-full py-4 bg-teal-600 text-white rounded-2xl font-black shadow-xl hover:bg-teal-700 transition-all">ذخیره تغییرات</button>
@@ -975,28 +1027,39 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <!-- DOC MODAL -->
-    <div x-show="showDocModal" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center bg-primary-900/80 backdrop-blur-sm p-4" x-transition>
-        <div @click.away="showDocModal = false" class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10">
-            <div class="flex justify-between items-center mb-8 border-b pb-4">
-                <h3 class="text-xl font-black text-primary-900">بارگذاری مدرک جدید</h3>
-                <button @click="showDocModal = false" class="text-gray-400 hover:text-red-500">✕</button>
+    <div id="docModalContainer" 
+         x-show="showDocModal" 
+         class="fixed inset-0 z-[100] hidden items-center justify-center bg-primary-900/80 backdrop-blur-sm p-4" 
+         :class="{ 'hidden': !showDocModal, 'flex': showDocModal }"
+         x-transition>
+        <div @click.away="showDocModal = false; closeDocModal();" class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-8 sm:p-10 relative">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl">📁</span>
+                    <h3 class="text-lg font-black text-primary-900">بارگذاری مدرک یا کارنامه</h3>
+                </div>
+                <button type="button" @click.stop="showDocModal = false" onclick="closeDocModal();" class="w-9 h-9 rounded-full bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer">✕</button>
             </div>
             
-            <form id="uploadDocForm" class="space-y-6">
+            <form id="uploadDocForm" class="space-y-5" onsubmit="event.preventDefault(); saveDoc();">
                 <input type="hidden" name="action" value="upload_document">
                 <input type="hidden" name="owner_type" value="student">
                 <input type="hidden" name="owner_id" value="<?php echo $person['id']; ?>">
                 
                 <div>
-                    <label class="text-[10px] font-bold text-gray-400 block mb-1 px-2">انتخاب فایل (PDF یا تصویر)</label>
-                    <input type="file" name="document" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500">
+                    <label class="text-xs font-bold text-gray-700 block mb-2 px-1">انتخاب فایل مدارک (PDF یا تصاویر JPG / PNG / WebP)</label>
+                    <input type="file" id="docFileInput" name="document" accept="application/pdf,image/jpeg,image/png,image/webp,image/jpg,.pdf,.docx,.doc" class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none file:mr-0 file:ml-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-teal-600 file:text-white hover:file:bg-teal-700 cursor-pointer">
                 </div>
-                <div class="md:col-span-2">
-                    <label class="text-[10px] font-bold text-gray-400 block mb-1 px-2">توضیح کوتاه</label>
-                    <input type="text" name="description" placeholder="مثلاً: کارنامه ترم اول" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500">
+
+                <div>
+                    <label class="text-xs font-bold text-gray-700 block mb-2 px-1">عنوان یا شرح مدرک</label>
+                    <input type="text" id="docDescriptionInput" name="description" placeholder="مثلاً: کارنامه نوبت اول، گواهی اشتغال به تحصیل..." class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
                 </div>
                 
-                <button type="button" @click="saveDoc()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all">بارگذاری اسناد</button>
+                <button type="button" id="saveDocBtn" onclick="saveDoc()" class="w-full py-4 bg-teal-600 text-white rounded-2xl font-black shadow-xl hover:bg-teal-700 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <span id="saveDocBtnIcon">📤</span>
+                    <span id="saveDocBtnText">شروع بارگذاری و ثبت سند</span>
+                </button>
             </form>
         </div>
     </div>
@@ -1055,20 +1118,135 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <script>
-        async function uploadPhoto(e) {
-            if (!e.target.files[0]) return;
-            const formData = new FormData();
-            formData.append('photo', e.target.files[0]);
-            formData.append('owner_type', 'student');
-            formData.append('owner_id', '<?php echo $person['id']; ?>');
-            formData.append('action', 'upload_photo');
+        // بهینه‌سازی و فشرده‌سازی تصویر در مرورگر قبل از ارسال
+        async function compressImageClient(file, maxDimension = 1200, quality = 0.85) {
+            if (!file || !file.type.startsWith('image/')) return file;
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let { width, height } = img;
+                        if (width <= maxDimension && height <= maxDimension && file.size < 600 * 1024) {
+                            return resolve(file);
+                        }
 
-            const res = await fetch('admin-request-handler.php', { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.success) {
-                document.getElementById('profileImg').src = data.path + '?' + Date.now();
-            } else {
-                alert(data.message || 'خطا در بارگذاری تصویر');
+                        if (width > height) {
+                            if (width > maxDimension) {
+                                height = Math.round((height * maxDimension) / width);
+                                width = maxDimension;
+                            }
+                        } else {
+                            if (height > maxDimension) {
+                                width = Math.round((width * maxDimension) / height);
+                                height = maxDimension;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            if (blob && blob.size < file.size) {
+                                const newFile = new File([blob], (file.name || 'avatar').replace(/\.[^/.]+$/, "") + ".jpg", {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(newFile);
+                            } else {
+                                resolve(file);
+                            }
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = () => resolve(file);
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => resolve(file);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function triggerPhotoUpload() {
+            const inp = document.getElementById('photoInput');
+            if (inp) {
+                inp.value = '';
+                inp.click();
+            }
+        }
+
+        function uploadPhotoNative(input) {
+            if (input && input.files && input.files[0]) {
+                uploadPhoto({ target: input });
+            }
+        }
+
+        function openDocModal() {
+            const m = document.getElementById('docModalContainer');
+            if (m) {
+                m.classList.remove('hidden');
+                m.style.display = 'flex';
+            }
+        }
+
+        function closeDocModal() {
+            const m = document.getElementById('docModalContainer');
+            if (m) {
+                m.classList.add('hidden');
+                m.style.display = 'none';
+            }
+            const form = document.getElementById('uploadDocForm');
+            if (form) form.reset();
+        }
+
+        async function uploadPhoto(e) {
+            const input = e.target;
+            const rawFile = input.files && input.files[0];
+            if (!rawFile) return;
+
+            const loadingEl = document.getElementById('photoLoading');
+            if (loadingEl) {
+                loadingEl.classList.remove('opacity-0', 'pointer-events-none');
+                loadingEl.classList.add('opacity-100');
+            }
+
+            try {
+                // فشرده‌سازی سمت کاربر جهت ارسال فوق سریع حتی با اینترنت ضعیف
+                const fileToUpload = await compressImageClient(rawFile, 1200, 0.85);
+
+                const formData = new FormData();
+                formData.append('photo', fileToUpload);
+                formData.append('owner_type', 'student');
+                formData.append('owner_id', '<?php echo $person['id']; ?>');
+                formData.append('action', 'upload_photo');
+
+                const res = await fetch('admin-request-handler.php', { method: 'POST', body: formData });
+                const rawText = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (jsonErr) {
+                    throw new Error(rawText.includes('413') ? 'حجم فایل بیش از حد مجاز سرور است.' : 'خطای ارتباط با سرور در هنگام ثبت تصویر.');
+                }
+
+                if (data.success) {
+                    const profileImg = document.getElementById('profileImg');
+                    if (profileImg) {
+                        profileImg.src = data.path + '?' + Date.now();
+                    }
+                } else {
+                    alert(data.message || 'خطا در بارگذاری تصویر');
+                }
+            } catch (err) {
+                alert(err.message || 'خطایی در ارسال تصویر رخ داد. لطفاً اتصال اینترنت را بررسی فرمایید.');
+            } finally {
+                if (loadingEl) {
+                    loadingEl.classList.remove('opacity-100');
+                    loadingEl.classList.add('opacity-0', 'pointer-events-none');
+                }
+                input.value = '';
             }
         }
 
@@ -1101,12 +1279,52 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         async function saveDoc() {
             const form = document.getElementById('uploadDocForm');
-            const res = await fetch('admin-request-handler.php', { method: 'POST', body: new FormData(form) });
-            const data = await res.json();
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.message || 'خطا در بارگذاری');
+            const fileInput = document.getElementById('docFileInput');
+            const submitBtn = document.getElementById('saveDocBtn');
+            const btnIcon = document.getElementById('saveDocBtnIcon');
+            const btnText = document.getElementById('saveDocBtnText');
+
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                alert('لطفاً ابتدا فایل مدرک (PDF یا تصویر) را انتخاب فرمایید.');
+                if (fileInput) fileInput.focus();
+                return;
+            }
+
+            const origIcon = btnIcon ? btnIcon.innerHTML : '📤';
+            const origText = btnText ? btnText.innerHTML : 'شروع بارگذاری و ثبت سند';
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            }
+            if (btnIcon) btnIcon.innerHTML = '⏳';
+            if (btnText) btnText.innerHTML = 'در حال ارسال و ذخیره مدرک...';
+
+            try {
+                const formData = new FormData(form);
+                const res = await fetch('admin-request-handler.php', { method: 'POST', body: formData });
+                const rawText = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (jsonErr) {
+                    throw new Error(rawText.includes('413') ? 'حجم فایل فراتر از حد مجاز سرور است.' : 'خطای ارتباط با سرور در هنگام ثبت مدرک.');
+                }
+
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'خطا در بارگذاری مدرک');
+                }
+            } catch (err) {
+                alert(err.message || 'خطا در ارسال فایل. لطفاً اتصال اینترنت خود را بررسی فرمایید.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                }
+                if (btnIcon) btnIcon.innerHTML = origIcon;
+                if (btnText) btnText.innerHTML = origText;
             }
         }
 
@@ -1175,7 +1393,9 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js');
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        reg.update();
+      }).catch(() => {});
     });
   }
 </script>

@@ -110,8 +110,8 @@ function can_view_audit_logs() {
 
 /**
  * آیا کاربر دسترسی به پرونده و تست‌های روانشناسی را دارد؟
- * منحصراً فقط آقای فرید علمی (مدیرعامل / superadmin)
- * منشی، معاونت آموزش، اعضای هیئت مدیره، اپراتور دیتا و سایر کاربران به هیچ عنوان دسترسی ندارند.
+ * آقای فرید برهان علمی (مدیرعامل / superadmin)، سرکار خانم فرتاش (معاونت آموزش) و سرکار خانم عباسی (دبیر اجرایی).
+ * دانش‌آموزان، اعضای هیئت مدیره و اپراتور دیتا به هیچ عنوان دسترسی ندارند.
  */
 function can_view_psychology() {
     if (!is_logged_in()) {
@@ -119,7 +119,7 @@ function can_view_psychology() {
     }
     $username = strtolower($_SESSION['username'] ?? '');
     $role = $_SESSION['role'] ?? '';
-    return ($username === 'faridelmi' || $role === 'superadmin');
+    return ($username === 'faridelmi' || $role === 'superadmin' || $role === 'secretary' || $role === 'education_deputy');
 }
 
 /**
@@ -150,6 +150,55 @@ function can_edit_records() {
 function can_add_student() {
     return has_role(['superadmin', 'secretary', 'admin']);
 }
+
+/**
+ * آیا کاربر دسترسی مشاهده هویت واقعی دانش‌آموزان در پویش‌ها و کمپین عمومی را دارد؟
+ * منحصراً برای مدیرعامل بنیاد (آقای فرید برهان علمی)، منشی بنیاد (سرکار خانم عباسی) و مدیریت سامانه
+ */
+function can_view_student_real_name() {
+    if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+        session_start();
+    }
+    if (!isset($_SESSION['user_id'])) {
+        return false;
+    }
+    $role = $_SESSION['role'] ?? '';
+    $username = strtolower(trim((string)($_SESSION['username'] ?? '')));
+    $userName = (string)($_SESSION['user_name'] ?? '');
+    $uid = (int)($_SESSION['user_id'] ?? 0);
+    $related_id = (int)($_SESSION['related_id'] ?? 0);
+
+    // ۱. دانش‌آموزان به هیچ عنوان دسترسی ندارند
+    if ($role === 'student') {
+        return false;
+    }
+
+    // ۲. شناسایی مستقیم آقای فرید برهان علمی (مدیرعامل) و سرکار خانم عباسی (منشی بنیاد)
+    $is_farid_or_abbasi = (
+        in_array($username, ['faridelmi', 'abbasi', 'admin', 'farid', 'elmi', 'parvaneh', '4167100319'], true) ||
+        mb_strpos($userName, 'برهان علمی') !== false ||
+        mb_strpos($userName, 'عباسی') !== false ||
+        in_array($uid, [224, 225, 249, 1305, 1887], true) ||
+        in_array($related_id, [224, 225, 249, 1305, 1887], true)
+    );
+    if ($is_farid_or_abbasi) {
+        return true;
+    }
+
+    // ۳. نقش‌های مجاز مدیریتی بنیاد
+    if (in_array($role, ['superadmin', 'secretary', 'admin', 'education_deputy'], true)) {
+        return true;
+    }
+
+    // ۴. فلگ سوپرادمین
+    if (!empty($_SESSION['is_superadmin'])) {
+        return true;
+    }
+
+    return false;
+}
+
+
 
 /**
  * عنوان فارسی نقش سازمانی
