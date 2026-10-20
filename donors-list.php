@@ -249,27 +249,27 @@ $donors_without_students_count = count($donors) - $donors_with_students_count;
                             </div>
                         </div>
 
-                        <!-- Donor Profile Header -->
-                        <div class="flex items-center gap-3.5 mb-4 text-right">
-                            <div class="w-16 h-16 bg-gradient-to-br from-teal-50 to-indigo-50 rounded-2xl flex items-center justify-center text-2xl border-2 border-white shadow-md group-hover:scale-105 transition-transform overflow-hidden shrink-0">
+                        <!-- Donor Profile Header (بدون علامت دست) -->
+                        <div class="mb-4 text-right">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-base font-black text-primary-900 leading-snug mb-1.5 break-words">
+                                        <?php echo htmlspecialchars($donor_full_name); ?>
+                                    </h3>
+                                    <div class="flex items-center gap-2 flex-wrap text-[11px] font-bold text-gray-500">
+                                        <span class="font-mono dir-ltr text-gray-600 bg-gray-50 px-2.5 py-0.5 rounded-lg border border-gray-100">
+                                            <?php echo htmlspecialchars($target_phone ?: 'بدون تلفن ثبت‌شده'); ?>
+                                        </span>
+                                        <span class="text-teal-700 bg-teal-50/60 px-2.5 py-0.5 rounded-lg border border-teal-100">
+                                            مجموع: <span class="font-mono font-black text-xs text-primary-900"><?php echo toFarsiDigits(number_format($d['total_donated'])); ?></span> ریال
+                                        </span>
+                                    </div>
+                                </div>
                                 <?php if (!empty($d['photo_path'])): ?>
-                                    <img src="<?php echo htmlspecialchars($d['photo_path']); ?>" alt="پرتره" class="w-full h-full object-cover">
-                                <?php else: ?>
-                                    <span>🤝</span>
+                                    <div class="w-12 h-12 rounded-2xl overflow-hidden border border-gray-200 shadow-sm shrink-0">
+                                        <img src="<?php echo htmlspecialchars($d['photo_path']); ?>" alt="پرتره" class="w-full h-full object-cover">
+                                    </div>
                                 <?php endif; ?>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <h3 class="text-base font-black text-primary-900 truncate mb-0.5">
-                                    <?php echo htmlspecialchars($donor_full_name); ?>
-                                </h3>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[11px] text-gray-500 font-mono font-bold dir-ltr">
-                                        <?php echo htmlspecialchars($target_phone ?: 'بدون تلفن'); ?>
-                                    </span>
-                                </div>
-                                <div class="text-[11px] text-teal-700 font-bold mt-0.5">
-                                    مجموع: <span class="font-mono font-black"><?php echo toFarsiDigits(number_format($d['total_donated'])); ?></span> ریال
-                                </div>
                             </div>
                         </div>
 
