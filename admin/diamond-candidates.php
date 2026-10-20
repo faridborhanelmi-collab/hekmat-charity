@@ -114,6 +114,15 @@ $questions_json_content = file_exists($questions_json_path) ? file_get_contents(
     <header class="bg-slate-900/90 backdrop-blur-xl border-b border-white/10 sticky top-0 z-40 shadow-xl">
         <div class="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-4">
+                <!-- Small Hekmat Foundation Logo linking to Admin Dashboard -->
+                <a href="index.php" title="بازگشت به پنل مدیریت بنیاد حکمت" class="group flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/40 px-3 py-1.5 rounded-2xl transition-all">
+                    <img src="/assets/logo-512.webp" alt="لوگوی بنیاد حکمت" class="h-9 w-auto object-contain drop-shadow transition-transform group-hover:scale-105">
+                    <div class="text-right hidden sm:block">
+                        <span class="block text-xs font-black text-white group-hover:text-emerald-300 transition-colors">بنیاد حکمت</span>
+                        <span class="block text-[10px] text-emerald-400 font-bold">← پنل مدیریت</span>
+                    </div>
+                </a>
+                <div class="h-8 w-px bg-white/10 hidden sm:block"></div>
                 <div class="w-12 h-12 bg-gradient-to-tr from-emerald-600 to-teal-400 text-white rounded-2xl flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20">
                     💎
                 </div>

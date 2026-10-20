@@ -75,6 +75,17 @@ $total_books_requested = $pdo->query("SELECT COUNT(*) FROM student_book_requests
     <header class="bg-slate-900 border-b border-white/10 sticky top-0 z-50 backdrop-blur-md">
         <div class="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-4">
+                <!-- Small Hekmat Foundation Logo linking to Admin Dashboard -->
+                <a href="index.php" title="بازگشت به پنل مدیریت بنیاد حکمت" class="group flex items-center gap-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-teal-500/40 px-3 py-1.5 rounded-2xl transition-all">
+                    <img src="/assets/logo-512.webp" alt="لوگوی بنیاد حکمت" class="h-9 w-auto object-contain drop-shadow transition-transform group-hover:scale-105">
+                    <div class="text-right hidden sm:block">
+                        <span class="block text-xs font-black text-white group-hover:text-teal-300 transition-colors">بنیاد حکمت</span>
+                        <span class="block text-[10px] text-teal-400 font-bold">← پنل مدیریت</span>
+                    </div>
+                </a>
+
+                <div class="h-8 w-px bg-white/10 hidden sm:block"></div>
+
                 <div class="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-xl shadow-lg shadow-indigo-500/20">
                     🤖
                 </div>
@@ -88,6 +99,10 @@ $total_books_requested = $pdo->query("SELECT COUNT(*) FROM student_book_requests
             </div>
 
             <div class="flex items-center gap-3">
+                <a href="index.php" class="bg-slate-800 hover:bg-slate-700 text-teal-300 border border-teal-500/30 font-bold px-3.5 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-md">
+                    <span>🏠</span>
+                    <span>داشبورد مدیریت</span>
+                </a>
                 <a href="library.php" class="bg-teal-600 hover:bg-teal-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-md">
                     <span>📚</span>
                     <span>بانک کتابخانه و امانات (۲۰۱ جلد)</span>
