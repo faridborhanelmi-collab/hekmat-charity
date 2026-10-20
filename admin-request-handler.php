@@ -219,7 +219,7 @@ switch ($action) {
         $school = trim($_POST['school'] ?? '');
         $father_name = trim($_POST['father_name'] ?? '');
         $mother_name = trim($_POST['mother_name'] ?? '');
-        $birthday = trim($_POST['birthday'] ?? '');
+        $birthday = normalize_jalali_date(trim($_POST['birthday'] ?? ''));
         $gender = trim($_POST['gender'] ?? 'دختر');
         $address = trim($_POST['address'] ?? '');
         $status = trim($_POST['status'] ?? 'active');
@@ -374,6 +374,7 @@ switch ($action) {
             $alias_name = trim($_POST['alias_name'] ?? '');
             $talents = trim($_POST['talents'] ?? '');
             $dreams = trim($_POST['dreams'] ?? '');
+            $st_birthday = normalize_jalali_date(trim($_POST['birthday'] ?? ''));
 
             if (!$is_financial_edit_allowed) {
                 // اپراتور دیتا (ویانا وحیدی) فقط مجاز به به‌روزرسانی فیلدهای هویتی و تحصیلی است
@@ -387,7 +388,7 @@ switch ($action) {
                         WHERE id = ?";
                 $stmt = $pdo->prepare($sql);
                 $success = $stmt->execute([
-                    $st_name, $st_surname, $_POST['phone'] ?? '', $_POST['birthday'] ?? '', $_POST['national_id'] ?? '', 
+                    $st_name, $st_surname, $_POST['phone'] ?? '', $st_birthday, $_POST['national_id'] ?? '', 
                     $_POST['father_name'] ?? '', $_POST['mother_name'] ?? '', $_POST['birth_place'] ?? '', $_POST['school'] ?? '', 
                     $_POST['grade'] ?? '', $_POST['field_of_study'] ?? '', $_POST['guardian_phone'] ?? '', $_POST['address'] ?? '', 
                     $_POST['items_given'] ?? '', $_POST['counselor'] ?? '', $_POST['explanations'] ?? '', $_POST['language_class'] ?? '', $_POST['status'] ?? 'active', 
@@ -422,7 +423,7 @@ switch ($action) {
                         WHERE id = ?";
                 $stmt = $pdo->prepare($sql);
                 $success = $stmt->execute([
-                    $st_name, $st_surname, $_POST['phone'] ?? '', $_POST['birthday'] ?? '', $_POST['national_id'] ?? '', 
+                    $st_name, $st_surname, $_POST['phone'] ?? '', $st_birthday, $_POST['national_id'] ?? '', 
                     $_POST['father_name'] ?? '', $_POST['mother_name'] ?? '', $_POST['birth_place'] ?? '', $_POST['school'] ?? '', 
                     $_POST['grade'] ?? '', $_POST['field_of_study'] ?? '', $_POST['guardian_phone'] ?? '', $_POST['address'] ?? '', 
                     $_POST['items_given'] ?? '', $_POST['counselor'] ?? '', $_POST['explanations'] ?? '', $_POST['language_class'] ?? '', $_POST['notes'] ?? '', $_POST['status'] ?? 'active', 
@@ -445,9 +446,10 @@ switch ($action) {
         $id = (int)$_POST['id'];
         $name = $_POST['name'] ?? '';
         $surname = $_POST['surname'] ?? '';
+        $donor_birthday = normalize_jalali_date(trim($_POST['birthday'] ?? ''));
         $stmt = $pdo->prepare("UPDATE donors SET name = ?, surname = ?, phone = ?, birthday = ?, description = ? WHERE id = ?");
         $success = $stmt->execute([
-            $name, $surname, $_POST['phone'], $_POST['birthday'], $_POST['description'], $id
+            $name, $surname, $_POST['phone'], $donor_birthday, $_POST['description'], $id
         ]);
         log_activity('ویرایش اطلاعات خیر', 'donor', $id, "ویرایش اطلاعات نیکوکار: {$name} {$surname}");
         echo json_encode(['success' => $success]);

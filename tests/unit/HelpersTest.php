@@ -56,4 +56,12 @@ RegressionTest::suite('Formatting, Currency & Jalali Date Regression Tests', fun
 
     $few_mins = date('Y-m-d H:i:s', time() - 300);
     RegressionTest::assertTrue(str_contains(time_ago_fa($few_mins), 'دقیقه پیش'), 'Timestamp 5 mins ago displays دقیقه پیش');
+    // 7. normalize_jalali_date (Standardize any birthday format to YYYY/MM/DD)
+    RegressionTest::assertEquals('1386/01/18', normalize_jalali_date('1386/01/18'), 'Standard YYYY/MM/DD preserved');
+    RegressionTest::assertEquals('1386/10/24', normalize_jalali_date('24\10\1386'), 'Reversed DD\MM\YYYY normalized to YYYY/MM/DD');
+    RegressionTest::assertEquals('1386/10/24', normalize_jalali_date('۲۴\۱۰\۱۳۸۶'), 'Farsi digits reversed normalized to YYYY/MM/DD');
+    RegressionTest::assertEquals('1387/05/12', normalize_jalali_date('1387-05-12'), 'Hyphenated date normalized to YYYY/MM/DD');
+    RegressionTest::assertEquals('1388/05/27', normalize_jalali_date('27|05\1388'), 'Typo separators pipe and backslash normalized');
+    RegressionTest::assertEquals('', normalize_jalali_date(''), 'Empty date returns empty string');
+    RegressionTest::assertEquals('', normalize_jalali_date(null), 'Null date returns empty string');
 });

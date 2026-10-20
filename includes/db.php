@@ -60,6 +60,37 @@ if (!function_exists('formatFarsiCurrency')) {
 }
 
 /**
+ * نرمال‌سازی و استانداردسازی تاریخ شمسی به فرمت YYYY/MM/DD
+ * قابلیت پشتیبانی از ارقام فارسی/عربی، جداکننده‌های مختلف (\, |, [, -, /)
+ * و تشخیص خودکار ترتیب (سال/ماه/روز یا روز/ماه/سال)
+ */
+if (!function_exists('normalize_jalali_date')) {
+    function normalize_jalali_date($date_str) {
+        if ($date_str === null || trim((string)$date_str) === '') return '';
+        $clean = toEnglishDigits(trim((string)$date_str));
+        $clean = preg_replace('/[\\\\|\[\]\-\.\s]+/', '/', $clean);
+        $clean = trim($clean, '/');
+        $parts = explode('/', $clean);
+        if (count($parts) === 3) {
+            $p0 = (int)$parts[0];
+            $p1 = (int)$parts[1];
+            $p2 = (int)$parts[2];
+            if ($p0 > 1300) {
+                $y = $p0; $m = $p1; $d = $p2;
+            } elseif ($p2 > 1300) {
+                $y = $p2; $m = $p1; $d = $p0;
+            } else {
+                $y = $p0; $m = $p1; $d = $p2;
+            }
+            if ($m >= 1 && $m <= 12 && $d >= 1 && $d <= 31) {
+                return sprintf('%04d/%02d/%02d', $y, $m, $d);
+            }
+        }
+        return trim((string)$date_str);
+    }
+}
+
+/**
  * تبدیل تاریخ میلادی به شمسی
  */
 if (!function_exists('gregorian_to_jalali')) {
