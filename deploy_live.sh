@@ -40,6 +40,7 @@ echo "✅ آزمون‌های رگرسیون با موفقیت پاس شدند."
 echo "📦 [2/3] همگام‌سازی فایل‌ها با سرور اصلی ($SERVER_IP)..."
 rsync -avz -e "$SSH_CMD" \
     --exclude '.git' \
+    --exclude 'scratch' \
     --exclude 'node_modules' \
     --exclude 'test-results' \
     --exclude 'tests/fixtures/test_hekmat.db*' \
@@ -60,7 +61,7 @@ rsync -avz -e "$SSH_CMD" \
     "$DIR/" "$SERVER_USER@$SERVER_IP:$REMOTE_PATH/"
 
 echo "🔧 [3/3] بررسی سینتکس فایل‌ها، مهاجرت دیتابیس و تنظیم مجوزها..."
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "$SERVER_USER@$SERVER_IP" "php -l $REMOTE_PATH/almas.php && php -l $REMOTE_PATH/api-diamond-check.php && php -l $REMOTE_PATH/api-diamond-submit.php && php -l $REMOTE_PATH/interview-test.php && php -l $REMOTE_PATH/interview-dossier.php && php -l $REMOTE_PATH/admin-interview-tests.php && php -l $REMOTE_PATH/includes/psychology_questions.php && php -l $REMOTE_PATH/donor-dashboard.php && php -l $REMOTE_PATH/login.php && php $REMOTE_PATH/cron/migrate_donors.php && php -r \"require '$REMOTE_PATH/includes/db.php'; \\\$pdo->exec('CREATE TABLE IF NOT EXISTS interview_tests (id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT UNIQUE NOT NULL, student_id INTEGER, candidate_name TEXT NOT NULL, mobile TEXT, national_id TEXT, test_type TEXT DEFAULT \\\'comprehensive_battery\\\', status TEXT DEFAULT \\\'pending\\\', current_question INTEGER DEFAULT 0, answers_json TEXT DEFAULT \\\'{}\\\', scores_json TEXT DEFAULT \\\'{}\\\', total_time_spent INTEGER DEFAULT 0, started_at TEXT, completed_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (student_id) REFERENCES students(id))'); echo 'Interview tests table verified on live server' . PHP_EOL;\" && sudo chown ubuntu:www-data $REMOTE_PATH && sudo chmod 775 $REMOTE_PATH && sudo chmod 666 $REMOTE_PATH/hekmat.db* 2>/dev/null || true"
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "$SERVER_USER@$SERVER_IP" "php -l $REMOTE_PATH/admin-psychology-comparison.php && php -l $REMOTE_PATH/almas.php && php -l $REMOTE_PATH/api-diamond-check.php && php -l $REMOTE_PATH/api-diamond-submit.php && php -l $REMOTE_PATH/interview-test.php && php -l $REMOTE_PATH/interview-dossier.php && php -l $REMOTE_PATH/admin-interview-tests.php && php -l $REMOTE_PATH/includes/psychology_questions.php && php -l $REMOTE_PATH/donor-dashboard.php && php -l $REMOTE_PATH/login.php && php $REMOTE_PATH/cron/migrate_donors.php && php -r \"require '$REMOTE_PATH/includes/db.php'; \\\$pdo->exec('CREATE TABLE IF NOT EXISTS interview_tests (id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT UNIQUE NOT NULL, student_id INTEGER, candidate_name TEXT NOT NULL, mobile TEXT, national_id TEXT, test_type TEXT DEFAULT \\\'comprehensive_battery\\\', status TEXT DEFAULT \\\'pending\\\', current_question INTEGER DEFAULT 0, answers_json TEXT DEFAULT \\\'{}\\\', scores_json TEXT DEFAULT \\\'{}\\\', total_time_spent INTEGER DEFAULT 0, started_at TEXT, completed_at TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (student_id) REFERENCES students(id))'); echo 'Interview tests table verified on live server' . PHP_EOL;\" && sudo chown ubuntu:www-data $REMOTE_PATH && sudo chmod 775 $REMOTE_PATH && sudo chmod 666 $REMOTE_PATH/hekmat.db* 2>/dev/null || true"
 
 echo "🎉 استقرار نسخه جدید بنیاد حکمت روی سرور اصلی با موفقیت کامل انجام شد!"
 
