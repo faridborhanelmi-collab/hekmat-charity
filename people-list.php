@@ -67,7 +67,10 @@ foreach ($students as $s) {
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased">
 
-    <?php include 'includes/navbar.php'; ?>
+    <?php 
+    $page_nav_title = 'مدیریت مددجویان و دانش‌آموزان';
+    include 'includes/admin-navbar.php'; 
+    ?>
 
     <header class="bg-primary-900 text-white py-12">
         <div class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">

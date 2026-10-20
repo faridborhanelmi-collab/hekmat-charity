@@ -153,7 +153,10 @@ $student_sponsors = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }">
 
-    <?php include 'includes/navbar.php'; ?>
+    <?php 
+    $page_nav_title = 'پرونده مددجو: ' . htmlspecialchars($person['name'] . ' ' . $person['surname']);
+    include 'includes/admin-navbar.php'; 
+    ?>
 
     <main class="container mx-auto px-6 py-12 max-w-6xl">
         <!-- Row 1: Top Widgets (Documents & Profile) -->

@@ -24,43 +24,29 @@ require_once __DIR__ . '/auth.php';
                     <span>گنج‌های پنهان</span>
                 </a>
                 <a href="index.php#services" class="hover:text-primary-600 transition-colors">خدمات</a>
-                <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                    <?php if (($_SESSION['role'] ?? '') !== 'data_operator'): ?>
-                        <a href="people-list.php" class="hover:text-primary-600 transition-colors">مددجویان</a>
-                    <?php endif; ?>
-                    <a href="admin/library.php" class="text-teal-700 font-bold hover:text-teal-800 bg-teal-50 px-3.5 py-1.5 rounded-lg border border-teal-200 flex items-center gap-1.5">📚 بانک کتاب و امانات (۲۰۱ جلد)</a>
-                    <?php if (($_SESSION['role'] ?? '') === 'data_operator'): ?>
-                        <a href="switch-role.php?target=student" class="text-indigo-600 font-bold hover:text-indigo-700 bg-indigo-50 px-3 py-1 rounded-lg">🎒 پورتال دانش‌آموزی من</a>
-                    <?php else: ?>
-                        <a href="admin/ai-prep.php" class="text-indigo-600 font-bold hover:text-indigo-700 bg-indigo-50 px-3 py-1 rounded-lg">🤖 آماده‌سازی هوش مصنوعی</a>
-                    <?php endif; ?>
-                    <?php if (function_exists('can_view_financial') && can_view_financial()): ?>
-                        <a href="donors-list.php" class="hover:text-primary-600 transition-colors">نیکوکاران</a>
-                    <?php endif; ?>
-                    <?php if (($_SESSION['role'] ?? '') !== 'data_operator'): ?>
-                        <a href="admin/index.php" class="text-teal-600 hover:text-teal-700 bg-teal-50 px-3 py-1 rounded-lg">پنل مدیریت</a>
-                    <?php endif; ?>
-                    <a href="admin-logout.php" class="hover:text-red-500">خروج</a>
-                <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
-                    <a href="student-dashboard.php?tab=books" class="text-teal-700 font-bold hover:text-teal-800 bg-teal-50 px-3.5 py-1.5 rounded-lg border border-teal-200 flex items-center gap-1.5">📚 بانک کتاب و امانات</a>
-                    <?php if (function_exists('is_viana') && is_viana()): ?>
-                        <a href="admin/library.php" class="text-indigo-700 font-bold hover:text-indigo-800 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-200">💻 میز کار اپراتور کتابخانه</a>
-                    <?php endif; ?>
-                    <a href="person-detail.php?id=<?php echo $_SESSION['related_id'] ?? ($_SESSION['user_id'] ?? 745); ?>" class="text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1 rounded-lg">پرونده من</a>
-                    <a href="admin-logout.php" class="hover:text-red-500">خروج</a>
-                <?php endif; ?>
             </div>
         </div>
 
         <!-- Desktop Login/Dashboard Button -->
         <div class="hidden md:block">
             <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                <!-- Links in desktop nav -->
+                <div class="flex items-center gap-3">
+                    <a href="admin/index.php" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white px-5 py-2 rounded-xl font-bold text-xs shadow-md shadow-teal-700/20 transition-all flex items-center gap-1.5">
+                        <span>🎛️</span>
+                        <span>پنل مدیریت</span>
+                    </a>
+                    <a href="admin-logout.php" class="text-xs text-rose-600 hover:text-rose-700 font-bold bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3.5 py-2 rounded-xl transition-colors">
+                        خروج
+                    </a>
+                </div>
             <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
-                <a href="student-dashboard.php" class="bg-primary-800 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-primary-700 transition-all shadow-md inline-block">میز کار دانش‌آموز</a>
+                <div class="flex items-center gap-3">
+                    <a href="student-dashboard.php" class="bg-primary-800 text-white px-5 py-2 rounded-xl font-bold text-xs hover:bg-primary-700 transition-all shadow-md inline-block">میز کار دانش‌آموز</a>
+                    <a href="admin-logout.php" class="text-xs text-rose-600 hover:text-rose-700 font-bold bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3.5 py-2 rounded-xl transition-colors">خروج</a>
+                </div>
             <?php elseif (isset($_SESSION['user_id']) && ($_SESSION['role'] ?? '') === 'benefactor'): ?>
                 <div class="flex items-center gap-3">
-                    <a href="donor-dashboard.php" class="bg-teal-700 text-white px-5 py-2.5 rounded-full font-bold text-sm hover:bg-teal-800 transition-all shadow-md inline-flex items-center gap-1.5">
+                    <a href="donor-dashboard.php" class="bg-teal-700 text-white px-5 py-2 rounded-xl font-bold text-xs hover:bg-teal-800 transition-all shadow-md inline-flex items-center gap-1.5">
                         <span>💎</span>
                         <span>داشبورد حامیان</span>
                     </a>
@@ -68,7 +54,7 @@ require_once __DIR__ . '/auth.php';
                 </div>
             <?php else: ?>
                 <a href="login.php"
-                    class="bg-primary-800 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-primary-700 transition-all shadow-md inline-block">ورود
+                    class="bg-primary-800 hover:bg-primary-700 text-white px-6 py-2.5 rounded-full font-bold text-xs transition-all shadow-md inline-block">ورود
                     به پنل کاربری</a>
             <?php endif; ?>
         </div>
@@ -96,22 +82,10 @@ require_once __DIR__ . '/auth.php';
             <a href="index.php#services" class="hover:text-primary-300 py-4 border-b border-white/10">خدمات بنیاد</a>
             
             <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                <?php if (($_SESSION['role'] ?? '') !== 'data_operator'): ?>
-                    <a href="people-list.php" class="hover:text-primary-300 py-4 border-b border-white/10">مددجویان</a>
-                <?php endif; ?>
-                <a href="admin/library.php" class="text-teal-300 hover:text-teal-200 py-4 border-b border-white/10 font-bold">📚 مخزن کتاب و امانات (۲۰۱ جلد)</a>
-                <?php if (($_SESSION['role'] ?? '') === 'data_operator'): ?>
-                    <a href="switch-role.php?target=student" class="text-indigo-300 hover:text-indigo-200 py-4 border-b border-white/10 font-bold">🎒 پورتال دانش‌آموزی من</a>
-                <?php else: ?>
-                    <a href="admin/ai-prep.php" class="text-indigo-300 hover:text-indigo-200 py-4 border-b border-white/10 font-bold">🤖 آماده‌سازی هوش مصنوعی</a>
-                <?php endif; ?>
-                <?php if (function_exists('can_view_financial') && can_view_financial()): ?>
-                    <a href="donors-list.php" class="hover:text-primary-300 py-4 border-b border-white/10">نیکوکاران</a>
-                <?php endif; ?>
-                <?php if (($_SESSION['role'] ?? '') !== 'data_operator'): ?>
-                    <a href="admin/index.php" class="text-teal-300 hover:text-teal-400 py-4 border-b border-white/10">پنل مدیریت</a>
-                <?php endif; ?>
-                <a href="admin-logout.php" class="text-red-400 hover:text-red-300 py-4 border-b border-white/10">خروج</a>
+                <div class="pt-4 border-t border-white/20">
+                    <a href="admin/index.php" class="bg-gradient-to-r from-teal-500 to-teal-700 text-white py-3 px-6 rounded-2xl block font-bold mb-2 shadow-lg">🎛️ ورود به پنل مدیریت</a>
+                    <a href="admin-logout.php" class="text-rose-400 py-2 block text-sm font-bold">خروج از حساب کاربری</a>
+                </div>
             <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
                 <a href="student-dashboard.php?tab=books" class="text-teal-300 hover:text-teal-200 py-4 border-b border-white/10 font-bold">📚 مخزن کتاب و امانات</a>
                 <?php if (function_exists('is_viana') && is_viana()): ?>

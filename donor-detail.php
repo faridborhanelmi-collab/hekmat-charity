@@ -110,7 +110,10 @@ $default_sms_preview = $smsService->renderTemplate(
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased" x-data="{ showEditModal: false, showDocModal: false, showDonationModal: false, donationForm: {id: '', amount: '', month: '', year: '', date: '', description: '', receipt_no: ''} }">
 
-    <?php include 'includes/navbar.php'; ?>
+    <?php 
+    $page_nav_title = 'پرونده نیکوکار: ' . htmlspecialchars($donor['name'] . ' ' . $donor['surname']);
+    include 'includes/admin-navbar.php'; 
+    ?>
 
     <main class="container mx-auto px-6 py-12 max-w-6xl">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -124,10 +127,19 @@ $default_sms_preview = $smsService->renderTemplate(
                         <img id="donorImg" src="<?php echo $donor['photo_path'] ?: 'https://ui-avatars.com/api/?name=' . $donor['name'] . '&background=00141e&color=fff&size=200'; ?>" 
                              class="relative w-full h-full object-cover">
                         
+                        <!-- لایه لودینگ هنگام بارگذاری عکس -->
+                        <div id="donorPhotoLoading" class="absolute inset-0 bg-primary-900/80 backdrop-blur-sm text-white flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 z-10">
+                            <svg class="animate-spin h-6 w-6 text-white mb-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span class="text-[9px] font-bold text-white">در حال آپلود...</span>
+                        </div>
+
                         <?php if ($can_edit): ?>
                         <div class="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <span class="text-2xl">📸</span>
-                            <input type="file" @change="uploadPhoto($event)" class="absolute inset-0 opacity-0 cursor-pointer">
+                            <input type="file" id="donorPhotoInput" accept="image/jpeg,image/png,image/webp,image/jpg" @change="uploadPhoto($event)" class="absolute inset-0 opacity-0 cursor-pointer">
                         </div>
                         <?php endif; ?>
                     </div>
@@ -535,19 +547,102 @@ $default_sms_preview = $smsService->renderTemplate(
     </div>
 
     <script>
-        async function uploadPhoto(e) {
-            const formData = new FormData();
-            formData.append('photo', e.target.files[0]);
-            formData.append('owner_type', 'donor');
-            formData.append('owner_id', '<?php echo $donor['id']; ?>');
-            formData.append('action', 'upload_photo');
+        // بهینه‌سازی و فشرده‌سازی تصویر در مرورگر قبل از ارسال
+        async function compressImageClient(file, maxDimension = 1200, quality = 0.85) {
+            if (!file || !file.type.startsWith('image/')) return file;
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let { width, height } = img;
+                        if (width <= maxDimension && height <= maxDimension && file.size < 600 * 1024) {
+                            return resolve(file);
+                        }
 
-            const res = await fetch('admin-request-handler.php', { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.success) {
-                document.getElementById('donorImg').src = data.path + '?' + Date.now();
-            } else {
-                alert(data.message);
+                        if (width > height) {
+                            if (width > maxDimension) {
+                                height = Math.round((height * maxDimension) / width);
+                                width = maxDimension;
+                            }
+                        } else {
+                            if (height > maxDimension) {
+                                width = Math.round((width * maxDimension) / height);
+                                height = maxDimension;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            if (blob && blob.size < file.size) {
+                                const newFile = new File([blob], (file.name || 'avatar').replace(/\.[^/.]+$/, "") + ".jpg", {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(newFile);
+                            } else {
+                                resolve(file);
+                            }
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = () => resolve(file);
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => resolve(file);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function uploadPhoto(e) {
+            const input = e.target;
+            const rawFile = input.files && input.files[0];
+            if (!rawFile) return;
+
+            const loadingEl = document.getElementById('donorPhotoLoading');
+            if (loadingEl) {
+                loadingEl.classList.remove('opacity-0', 'pointer-events-none');
+                loadingEl.classList.add('opacity-100');
+            }
+
+            try {
+                const fileToUpload = await compressImageClient(rawFile, 1200, 0.85);
+
+                const formData = new FormData();
+                formData.append('photo', fileToUpload);
+                formData.append('owner_type', 'donor');
+                formData.append('owner_id', '<?php echo $donor['id']; ?>');
+                formData.append('action', 'upload_photo');
+
+                const res = await fetch('admin-request-handler.php', { method: 'POST', body: formData });
+                const rawText = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (jsonErr) {
+                    throw new Error(rawText.includes('413') ? 'حجم فایل بیش از حد مجاز سرور است.' : 'خطای ارتباط با سرور در هنگام ثبت تصویر.');
+                }
+
+                if (data.success) {
+                    const donorImg = document.getElementById('donorImg');
+                    if (donorImg) {
+                        donorImg.src = data.path + '?' + Date.now();
+                    }
+                } else {
+                    alert(data.message || 'خطا در بارگذاری تصویر');
+                }
+            } catch (err) {
+                alert(err.message || 'خطایی در ارسال تصویر رخ داد. لطفاً اتصال اینترنت را بررسی فرمایید.');
+            } finally {
+                if (loadingEl) {
+                    loadingEl.classList.remove('opacity-100');
+                    loadingEl.classList.add('opacity-0', 'pointer-events-none');
+                }
+                input.value = '';
             }
         }
 

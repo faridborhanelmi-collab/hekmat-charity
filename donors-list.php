@@ -52,7 +52,10 @@ $due_reminders_count = count(array_filter($donors, fn($d) => !empty($d['reminder
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 antialiased">
 
-    <?php include 'includes/navbar.php'; ?>
+    <?php 
+    $page_nav_title = 'مدیریت نیکوکاران و یادآوری‌ها';
+    include 'includes/admin-navbar.php'; 
+    ?>
 
     <header class="bg-gradient-to-l from-primary-900 via-slate-900 to-indigo-950 text-white py-14 shadow-md">
         <div class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
