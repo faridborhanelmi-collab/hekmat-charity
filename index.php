@@ -1,4 +1,10 @@
-<?php 
+<?php
+// Defensive router: If accessed via neromind subdomain, immediately route to the NeroMind online assessment portal
+if (isset($_SERVER['HTTP_HOST']) && stripos($_SERVER['HTTP_HOST'], 'neromind') !== false) {
+    $qs = !empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '';
+    header('Location: /interview-test.php' . $qs);
+    exit;
+} 
 session_start();
 require_once 'includes/db.php';
 
