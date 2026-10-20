@@ -81,15 +81,10 @@ $donors_without_students_count = count($donors) - $donors_with_students_count;
     include 'includes/admin-navbar.php'; 
     ?>
 
-    <header class="bg-gradient-to-l from-primary-900 via-slate-900 to-indigo-950 text-white py-12 shadow-md">
+    <header class="bg-gradient-to-l from-primary-900 via-slate-900 to-indigo-950 text-white py-8 shadow-md">
         <div class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div class="text-right">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-xs font-bold mb-3 border border-teal-500/30">
-                    <span>💎</span>
-                    <span>پورتال جامعه حامیان بنیاد حکمت</span>
-                </div>
-                <h1 class="text-2xl md:text-3xl font-black mb-2 text-white">مدیریت نیکوکاران، تخصیص فرزندان و یادآوری‌ها</h1>
-                <p class="text-teal-100/80 text-xs md:text-sm max-w-2xl leading-relaxed">ارتباط مستقیم با خیرین از طریق واتس‌اپ و ملی‌پیامک، شفافیت اتصال حامیان به دانش‌آموزان و زمان‌بندی یادآوری‌های دوره‌ای.</p>
+                <h1 class="text-2xl md:text-3xl font-black text-white">مدیریت نیکوکاران، تخصیص فرزندان و یادآوری‌ها</h1>
             </div>
             <div class="grid grid-cols-3 gap-3 w-full md:w-auto">
                 <div class="bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20 text-center min-w-[130px]">

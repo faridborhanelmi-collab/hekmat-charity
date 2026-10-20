@@ -7,6 +7,7 @@ if (isset($_SESSION['user_id'])) {
 }
 session_unset();
 session_destroy();
-header("Location: login.php");
+$redirect = !empty($_GET['redirect']) ? $_GET['redirect'] : '/index.php';
+header("Location: " . $redirect);
 exit();
 ?>
