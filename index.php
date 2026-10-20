@@ -2,13 +2,6 @@
 session_start();
 require_once 'includes/db.php';
 
-// Fetch sums for the services section
-$bursary_sum = $pdo->query('SELECT SUM(amount) FROM expenses WHERE category_id = 3')->fetchColumn() ?: 0;
-$medical_sum = $pdo->query('SELECT SUM(amount) FROM expenses WHERE category_id = 7')->fetchColumn() ?: 0;
-$edu_sum = $pdo->query('SELECT SUM(amount) FROM expenses WHERE category_id = 6')->fetchColumn() ?: 0;
-$consulting_sum = $pdo->query("SELECT SUM(amount) FROM expenses WHERE description LIKE '%مشاوره%'")->fetchColumn() ?: 0;
-?>
-<?php
 $page_title = 'بنیاد نیکوکاری حکمت | خیریه و بورس تحصیلی دانش‌آموزان مستعد';
 $page_desc = 'بنیاد نیکوکاری حکمت مشهد (شماره ثبت ۷۷۰۷)، حامی و بورس‌دهنده دانش‌آموزان نخبه و کم‌برخوردار در سراسر کشور با شفافیت ۱۰۰٪ مالی. حامی آینده نخبگان مستعد باشید.';
 ?>
@@ -225,36 +218,24 @@ $page_desc = 'بنیاد نیکوکاری حکمت مشهد (شماره ثبت �
                     <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">📚</div>
                     <h3 class="font-bold mb-2 text-gray-800 group-hover:text-primary-600">آموزشی</h3>
                     <p class="text-sm text-gray-500">تهیه کتب، ثبت‌نام کلاس زبان و فضای مطالعه اختصاصی.</p>
-                    <?php if ($edu_sum > 0): ?>
-                        <div class="mt-4 text-xs font-bold text-accent-600 bg-accent-50 inline-block px-2 py-1 rounded">مجموع پرداختی: <?php echo number_format($edu_sum); ?> تومان</div>
-                    <?php endif; ?>
                 </a>
                 <a href="burs-hekmat.php"
                     class="p-8 bg-gray-50 rounded-3xl hover:shadow-lg transition-all border-t-4 border-accent-500 hover:-translate-y-1 block">
                     <div class="text-3xl mb-4 hover:animate-pulse">💰</div>
                     <h3 class="font-bold mb-2 text-gray-800">بورس حکمت</h3>
                     <p class="text-sm text-gray-500">پرداخت کمک‌هزینه ماهانه و حمایت از نخبگان المپیادی.</p>
-                    <?php if ($bursary_sum > 0): ?>
-                        <div class="mt-4 text-xs font-bold text-accent-600 bg-accent-50 inline-block px-2 py-1 rounded">مجموع پرداختی: <?php echo number_format($bursary_sum); ?> تومان</div>
-                    <?php endif; ?>
                 </a>
                 <a href="services-counseling.php"
                     class="p-8 bg-gray-50 rounded-3xl hover:shadow-lg transition-all border-t-4 border-accent-500 group hover:-translate-y-1 block">
                     <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">🧠</div>
                     <h3 class="font-bold mb-2 text-gray-800 group-hover:text-blue-600">مشاوره</h3>
                     <p class="text-sm text-gray-500">خدمات روانشناسی و مشاوره تحصیلی تخصصی.</p>
-                    <?php if ($consulting_sum > 0): ?>
-                        <div class="mt-4 text-xs font-bold text-accent-600 bg-accent-50 inline-block px-2 py-1 rounded">مجموع پرداختی: <?php echo number_format($consulting_sum); ?> تومان</div>
-                    <?php endif; ?>
                 </a>
                 <a href="services-medical.php"
                     class="p-8 bg-gray-50 rounded-3xl hover:shadow-lg transition-all border-t-4 border-accent-500 group hover:-translate-y-1 block">
                     <div class="text-3xl mb-4 group-hover:scale-110 transition-transform">🩺</div>
                     <h3 class="font-bold mb-2 text-gray-800 group-hover:text-red-500">درمانی</h3>
                     <p class="text-sm text-gray-500">پوشش کامل هزینه‌های پزشکی دانش‌آموزان تحت پوشش.</p>
-                    <?php if ($medical_sum > 0): ?>
-                        <div class="mt-4 text-xs font-bold text-accent-600 bg-accent-50 inline-block px-2 py-1 rounded">مجموع پرداختی: <?php echo number_format($medical_sum); ?> تومان</div>
-                    <?php endif; ?>
                 </a>
             </div>
         </div>
