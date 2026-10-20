@@ -52,6 +52,10 @@ $spon_stmt = $pdo->prepare("
 $spon_stmt->execute([$id]);
 $sponsored_students = $spon_stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$declared_shares = (int)($donor['reminder_shares'] ?? 1);
+$connected_count = count($sponsored_students);
+$unassigned_count = max(0, $declared_shares - $connected_count);
+
 // Fetch SMS Reminder Data & Logs
 $smsService = new SmsService($pdo);
 $sms_settings = $smsService->getSettings();
@@ -231,18 +235,28 @@ $default_sms_preview = $smsService->renderTemplate(
                             <p class="text-xs text-gray-400 font-bold mt-1">با رعایت کامل محرمانگی (کد و نام مستعار در پرتال خیر)</p>
                         </div>
                         <?php if ($can_edit): ?>
-                        <a href="admin/sponsorships.php?donor_id=<?php echo $donor['id']; ?>" class="py-2.5 px-4 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 shrink-0">
-                            <span>+</span> پیوند دانش‌آموز جدید
-                        </a>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <?php if ($unassigned_count > 0): ?>
+                            <button onclick="autoAllocateStudent(<?php echo $donor['id']; ?>)" class="py-2.5 px-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer animate-pulse">
+                                <span>⚡</span> تخصیص هوشمند دانش‌آموز (<?php echo toFarsiDigits($unassigned_count); ?> سهم باز)
+                            </button>
+                            <?php endif; ?>
+                            <a href="admin/sponsorships.php?donor_id=<?php echo $donor['id']; ?>" class="py-2.5 px-3.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 shrink-0">
+                                <span>+</span> پیوند دستی دانش‌آموز جدید
+                            </a>
+                        </div>
                         <?php endif; ?>
                     </div>
 
                     <?php if (empty($sponsored_students)): ?>
-                        <div class="p-8 border-2 border-dashed border-gray-100 rounded-3xl text-center text-xs text-gray-400 font-bold">
-                            در حال حاضر دانش‌آموزی برای این خیر تعریف نشده است.
+                        <div class="p-8 border-2 border-dashed border-gray-100 rounded-3xl text-center text-xs text-gray-400 font-bold space-y-3">
+                            <div>در حال حاضر دانش‌آموزی برای این خیر تعریف نشده است.</div>
                             <?php if ($can_edit): ?>
-                            <div class="mt-3">
-                                <a href="admin/sponsorships.php?donor_id=<?php echo $donor['id']; ?>" class="text-teal-600 underline hover:text-teal-700">کلیک کنید تا اولین دانش‌پژوه را به این خیر متصل نمایید.</a>
+                            <div class="flex items-center justify-center gap-3">
+                                <button onclick="autoAllocateStudent(<?php echo $donor['id']; ?>)" class="py-2.5 px-5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+                                    <span>⚡</span> تخصیص خودکار و هوشمند دانش‌آموز به این خیر
+                                </button>
+                                <a href="admin/sponsorships.php?donor_id=<?php echo $donor['id']; ?>" class="text-teal-600 underline hover:text-teal-700">یا انتخاب دستی</a>
                             </div>
                             <?php endif; ?>
                         </div>
@@ -829,6 +843,24 @@ $default_sms_preview = $smsService->renderTemplate(
                     detailAlert.className = 'p-4 rounded-2xl text-xs font-bold text-center bg-rose-50 text-rose-700 border border-rose-200 block';
                     detailAlert.innerText = 'خطا در برقراری ارتباط با سرور.';
                 }
+            }
+        }
+
+        async function autoAllocateStudent(donorId) {
+            if (!confirm('آیا مایلید دانش‌پژوه فعال و بدون حامی به صورت هوشمند و خودکار به این خیر متصل شود؟')) return;
+            const fd = new FormData();
+            fd.append('action', 'auto_allocate_sponsorship');
+            fd.append('donor_id', donorId);
+            try {
+                const res = await fetch('admin-request-handler.php', { method: 'POST', body: fd }).then(r => r.json());
+                if (res.success) {
+                    alert(res.message);
+                    location.reload();
+                } else {
+                    alert(res.message || 'خطا در تخصیص دانش‌آموز.');
+                }
+            } catch (e) {
+                alert('خطا در برقراری ارتباط با سرور.');
             }
         }
     </script>

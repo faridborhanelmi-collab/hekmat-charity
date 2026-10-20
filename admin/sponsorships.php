@@ -275,9 +275,14 @@ function toFarsi($str) {
                         <?php endif; ?>
                     </div>
                 </div>
-                <button @click="showCreateModal = true" class="w-full mt-8 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-2xl transition-all shadow-md">
-                    + تعریف بورس تحصیلی جدید
-                </button>
+                <div class="flex flex-col gap-2.5 mt-6">
+                    <button @click="showCreateModal = true" class="w-full py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-2xl transition-all shadow-md text-xs">
+                        + تعریف بورس تحصیلی دستی
+                    </button>
+                    <button onclick="autoAllocateAllSponsorships()" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white font-bold rounded-2xl transition-all shadow-md text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span>⚡</span> تخصیص هوشمند تمام خیرین منتظر
+                    </button>
+                </div>
             </div>
 
             <!-- Message Queue Vetting Summary -->
@@ -598,6 +603,25 @@ function toFarsi($str) {
         </div>
 
     </main>
+
+    <script>
+        async function autoAllocateAllSponsorships() {
+            if (!confirm('آیا مایلید تمام خیرینی که دارای سهم اعلام‌شده اما بدون دانش‌آموز هستند، به صورت هوشمند به دانش‌آموزان بدون حامی متصل شوند؟')) return;
+            const fd = new FormData();
+            fd.append('action', 'auto_allocate_sponsorship');
+            try {
+                const res = await fetch('../admin-request-handler.php', { method: 'POST', body: fd }).then(r => r.json());
+                if (res.success) {
+                    alert(res.message);
+                    location.reload();
+                } else {
+                    alert(res.message || 'خطا در تخصیص هوشمند.');
+                }
+            } catch (e) {
+                alert('خطا در برقراری ارتباط با سرور.');
+            }
+        }
+    </script>
 
 
 <script>

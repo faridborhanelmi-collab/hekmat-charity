@@ -42,7 +42,8 @@ $financial_actions = [
     'add_expense', 'edit_expense', 'delete_expense',
     'update_expense_category', 'update_donor', 'delete_record',
     'save_donor_reminder', 'send_donor_test_sms', 'send_all_due_sms', 'save_sms_settings',
-    'toggle_donor_reminder_active', 'send_donor_instant_reminder', 'add_new_donor_reminder'
+    'toggle_donor_reminder_active', 'send_donor_instant_reminder', 'add_new_donor_reminder',
+    'auto_allocate_sponsorship'
 ];
 
 if (in_array($action, $financial_actions, true) && !$is_financial_edit_allowed) {
@@ -774,6 +775,16 @@ switch ($action) {
             'reminder_shares' => $reminder_shares,
             'interval_label' => $interval_label
         ]);
+        break;
+
+    case 'auto_allocate_sponsorship':
+        require_once __DIR__ . '/scripts/auto_allocate_sponsorships.php';
+        $donor_id = !empty($_POST['donor_id']) ? (int)$_POST['donor_id'] : null;
+        $res = auto_allocate_sponsorships($pdo, $donor_id);
+        if ($res['success'] && $res['allocated'] > 0) {
+            log_activity('تخصیص هوشمند بورس دانش‌پژوه', 'sponsorship', $donor_id ?: 0, $res['message']);
+        }
+        echo json_encode($res);
         break;
 
     case 'toggle_donor_reminder_active':
