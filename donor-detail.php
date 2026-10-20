@@ -152,6 +152,29 @@ $default_sms_preview = $smsService->renderTemplate(
                             <p class="text-[10px] text-gray-400 font-bold mb-1">شماره تماس</p>
                             <p class="text-sm font-mono font-bold text-gray-700 dir-ltr text-left"><?php echo $donor['phone']; ?></p>
                         </div>
+                        <?php
+                            $clean_p = preg_replace('/[^0-9]/', '', $donor['phone']);
+                            $wa_phone = '';
+                            if (!empty($clean_p)) {
+                                if (str_starts_with($clean_p, '09')) $wa_phone = '98' . substr($clean_p, 1);
+                                elseif (str_starts_with($clean_p, '989')) $wa_phone = $clean_p;
+                                else $wa_phone = '98' . $clean_p;
+                            }
+                            $donor_display_name = trim($donor['name'] . ' ' . $donor['surname']);
+                            $wa_msg = rawurlencode("سلام و درود خدمت نیکوکار گرامی جناب آقای/سرکار خانم {$donor_display_name}\nاز همراهی ارزشمند شما با نخبگان بنیاد حکمت صمیمانه سپاسگزاریم.\nبنیاد خیریه حکمت");
+                        ?>
+                        <?php if (!empty($wa_phone)): ?>
+                        <div class="grid grid-cols-2 gap-2">
+                            <a href="https://wa.me/<?php echo $wa_phone; ?>?text=<?php echo $wa_msg; ?>" target="_blank" 
+                               class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-[10px] font-black shadow-md transition-all flex items-center justify-center gap-1.5">
+                                <span>💬</span> پیام واتس‌اپ
+                            </a>
+                            <a href="tel:<?php echo $donor['phone']; ?>" 
+                               class="py-2.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-2xl text-[10px] font-black transition-all flex items-center justify-center gap-1.5 border border-gray-200">
+                                <span>📞</span> تماس تلفنی
+                            </a>
+                        </div>
+                        <?php endif; ?>
                         <?php if ($can_edit): ?>
                             <button @click="showEditModal = true" class="w-full py-3 bg-primary-900 text-white rounded-2xl text-[10px] font-black shadow-lg hover:bg-teal-600 transition-all">ویرایش اطلاعات حامی</button>
                         <?php elseif (is_read_only()): ?>

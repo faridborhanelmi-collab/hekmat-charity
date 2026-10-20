@@ -913,6 +913,123 @@ switch ($action) {
         echo json_encode(['success' => $success, 'message' => 'تنظیمات درگاه پیامک با موفقیت ذخیره شد.']);
         break;
 
+    case 'send_custom_donor_sms':
+        $donor_id = (int)($_POST['donor_id'] ?? 0);
+        $phone = trim($_POST['phone'] ?? '');
+        $message = trim($_POST['message'] ?? '');
+
+        if (empty($phone) || empty($message)) {
+            echo json_encode(['success' => false, 'message' => 'شماره همراه و متن پیام الزامی است.']);
+            break;
+        }
+
+        $clean_phone = SmsService::cleanPhoneNumber($phone);
+        if (!$clean_phone) {
+            echo json_encode(['success' => false, 'message' => 'شماره همراه نامعتبر است.']);
+            break;
+        }
+
+        $smsService = new SmsService($pdo);
+        $result = $smsService->sendMelipayamakDirect($clean_phone, $message);
+
+        // ثبت در لاگ پیامک‌های ارسالی خیرین
+        $today_jalali = SmsService::getCurrentJalaliDate();
+        $is_sent = !empty($result['success']);
+        try {
+            $log_stmt = $pdo->prepare("
+                INSERT INTO donor_sms_logs (donor_id, phone, message, sent_date, status, provider_response, sent_by_user_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            $log_stmt->execute([
+                $donor_id > 0 ? $donor_id : null,
+                $clean_phone,
+                $message,
+                $today_jalali,
+                $is_sent ? 'sent' : 'failed',
+                json_encode($result, JSON_UNESCAPED_UNICODE),
+                $_SESSION['user_id'] ?? null
+            ]);
+        } catch (Exception $e) {}
+
+        if ($is_sent) {
+            log_activity('ارسال پیامک مستقیم به خیر', 'donor', $donor_id, "ارسال پیامک با درگاه ملی‌پیامک به شماره {$clean_phone}");
+            echo json_encode([
+                'success' => true,
+                'message' => 'پیامک با موفقیت از طریق درگاه ملی‌پیامک ارسال گردید.'
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false,
+                'message' => $result['message'] ?? 'خطا در ارتباط با وب‌سرویس ملی‌پیامک.'
+            ]);
+        }
+        break;
+
+    case 'assign_student_to_donor':
+        $donor_id = (int)($_POST['donor_id'] ?? 0);
+        $student_id = (int)($_POST['student_id'] ?? 0);
+        $shares = max(1, (int)($_POST['shares'] ?? 1));
+
+        if ($donor_id <= 0 || $student_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'انتخاب خیر و دانش‌آموز الزامی است.']);
+            break;
+        }
+
+        // بررسی اینکه آیا این حامی قبلاً به این دانش‌آموز وصل شده است یا خیر
+        $chk = $pdo->prepare("SELECT id FROM sponsorships WHERE donor_id = ? AND student_id = ? AND status = 'active'");
+        $chk->execute([$donor_id, $student_id]);
+        if ($chk->fetch()) {
+            echo json_encode(['success' => false, 'message' => 'این دانش‌آموز در حال حاضر تحت حمایت این نیکوکار می‌باشد.']);
+            break;
+        }
+
+        $today_jalali = SmsService::getCurrentJalaliDate();
+        $ins = $pdo->prepare("INSERT INTO sponsorships (donor_id, student_id, shares_count, start_date, status) VALUES (?, ?, ?, ?, 'active')");
+        $ins->execute([$donor_id, $student_id, $shares, $today_jalali]);
+        $sponsorship_id = $pdo->lastInsertId();
+
+        // دریافت نام‌ها جهت لاگ
+        $d_name = $pdo->query("SELECT name || ' ' || COALESCE(surname, '') FROM donors WHERE id = {$donor_id}")->fetchColumn() ?: "خیر {$donor_id}";
+        $st_name = $pdo->query("SELECT name || ' ' || COALESCE(surname, '') FROM students WHERE id = {$student_id}")->fetchColumn() ?: "دانش‌آموز {$student_id}";
+
+        log_activity('تخصیص دانش‌آموز به حامی', 'sponsorship', $sponsorship_id, "اتصال دانش‌آموز «{$st_name}» به حامی «{$d_name}» با {$shares} سهم");
+
+        echo json_encode([
+            'success' => true,
+            'message' => "دانش‌آموز «{$st_name}» با موفقیت به عنوان تحت‌پوشش حامی «{$d_name}» ثبت گردید."
+        ]);
+        break;
+
+    case 'remove_sponsorship':
+        $sponsorship_id = (int)($_POST['sponsorship_id'] ?? 0);
+        if ($sponsorship_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'شناسه نامعتبر است.']);
+            break;
+        }
+
+        $sp_row = $pdo->query("
+            SELECT s.*, 
+                   d.name || ' ' || COALESCE(d.surname,'') as d_name, 
+                   st.name || ' ' || COALESCE(st.surname,'') as st_name 
+            FROM sponsorships s 
+            LEFT JOIN donors d ON s.donor_id = d.id 
+            LEFT JOIN students st ON s.student_id = st.id 
+            WHERE s.id = {$sponsorship_id}
+        ")->fetch(PDO::FETCH_ASSOC);
+
+        if ($sp_row) {
+            $del = $pdo->prepare("DELETE FROM sponsorships WHERE id = ?");
+            $del->execute([$sponsorship_id]);
+            log_activity('لغو تخصیص دانش‌آموز', 'sponsorship', $sponsorship_id, "لغو حمایت دانش‌آموز «{$sp_row['st_name']}» توسط حامی «{$sp_row['d_name']}»");
+            echo json_encode([
+                'success' => true, 
+                'message' => "تخصیص دانش‌آموز «{$sp_row['st_name']}» با موفقیت لغو گردید."
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'رکورد تخصیص یافت نشد.']);
+        }
+        break;
+
     default:
         echo json_encode(['success' => false, 'message' => 'عملیات نامعتبر']);
         break;
