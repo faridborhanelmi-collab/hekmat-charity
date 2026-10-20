@@ -24,7 +24,12 @@ $today_logs_count = $can_view_logs ? ($pdo->query("SELECT COUNT(*) FROM audit_lo
 $active_students = $pdo->query("SELECT COUNT(*) FROM students WHERE status IN ('active', 'university')")->fetchColumn();
 $total_students = $pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
 $total_donors = $pdo->query("SELECT COUNT(*) FROM donors")->fetchColumn();
-$total_collected = (float)($pdo->query("SELECT SUM(total_donated) FROM donors")->fetchColumn() ?: 0);
+
+// Fetch actual verified donations and expenses
+$total_collected = (float)($pdo->query("SELECT SUM(amount) FROM donations")->fetchColumn() ?: 0);
+if ($total_collected <= 0) {
+    $total_collected = (float)($pdo->query("SELECT SUM(total_donated) FROM donors")->fetchColumn() ?: 0);
+}
 $total_expenses = (float)($pdo->query("SELECT SUM(amount) FROM expenses")->fetchColumn() ?: 0);
 $bank_balance = $total_collected - $total_expenses;
 
@@ -69,7 +74,9 @@ $today_birthdays = [];
 $upcoming_birthdays = [];
 
 foreach ($all_birthday_people as $p) {
-    $parts = explode('/', str_replace('-', '/', trim($p['birthday'])));
+    $norm = normalize_jalali_date($p['birthday'] ?? '');
+    if (empty($norm)) continue;
+    $parts = explode('/', $norm);
     if (count($parts) === 3) {
         $bm = (int)$parts[1];
         $bd = (int)$parts[2];
@@ -83,7 +90,7 @@ foreach ($all_birthday_people as $p) {
                 'name' => $p['name'],
                 'surname' => $p['surname'],
                 'type' => $p['type'],
-                'birthday' => $p['birthday'],
+                'birthday' => $norm,
                 'month_name' => $persian_months_map[$bm] ?? '',
                 'day' => $bd,
                 'days_left' => $diff
@@ -379,46 +386,67 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                 </div>
                 <?php endif; ?>
 
-                <!-- Stats Overview (5 Key Pillars) -->
+                <!-- Stats Overview (5 Key Pillars - Pure Vazirmatn Typography) -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5">
                     <!-- 1. Students -->
-                    <a href="../people-list.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                    <a href="../people-list.php" class="bg-white p-6 rounded-[2.2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
                         <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">🎓</div>
-                        <div class="text-2xl font-black text-primary-900 font-mono"><?php echo toFarsiDigits($active_students); ?> <span class="text-xs font-normal text-gray-400">/ <?php echo toFarsiDigits($total_students); ?></span></div>
-                        <div class="text-[11px] text-gray-500 font-bold mt-1">دانش‌آموز تحت پوشش</div>
-                        <span class="text-[9px] text-teal-600 font-bold mt-1 bg-teal-50 px-2 py-0.5 rounded-full">فعال در سامانه</span>
+                        <div class="text-2xl font-black text-gray-900 flex items-baseline justify-center gap-1">
+                            <span><?php echo toFarsiDigits($active_students); ?></span>
+                            <span class="text-xs font-normal text-gray-400">/ <?php echo toFarsiDigits($total_students); ?></span>
+                        </div>
+                        <div class="text-xs text-gray-600 font-bold mt-1.5">دانش‌آموز تحت پوشش</div>
+                        <div class="mt-2.5 px-3 py-1 rounded-xl bg-teal-50 text-teal-700 text-[11px] font-bold">فعال در سامانه</div>
                     </a>
 
                     <!-- 2. Donors -->
-                    <a href="../donors-list.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                    <a href="../donors-list.php" class="bg-white p-6 rounded-[2.2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
                         <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">🤝</div>
-                        <div class="text-2xl font-black text-primary-900 font-mono"><?php echo toFarsiDigits($total_donors); ?></div>
-                        <div class="text-[11px] text-gray-500 font-bold mt-1">نیکوکار و حامی فعال</div>
-                        <span class="text-[9px] text-indigo-600 font-bold mt-1 bg-indigo-50 px-2 py-0.5 rounded-full">جامعه خیرین</span>
+                        <div class="text-2xl font-black text-gray-900"><?php echo toFarsiDigits($total_donors); ?></div>
+                        <div class="text-xs text-gray-600 font-bold mt-1.5">نیکوکار و حامی فعال</div>
+                        <div class="mt-2.5 px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 text-[11px] font-bold">جامعه خیرین</div>
                     </a>
 
                     <!-- 3. Total Collected (Income) -->
-                    <a href="financial.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                    <a href="financial.php" class="bg-white p-6 rounded-[2.2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
                         <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">💰</div>
-                        <div class="text-xl font-black text-emerald-700 font-mono"><?php echo toFarsiDigits(number_format($total_collected / 1000000000, 1)); ?> <span class="text-xs font-bold text-gray-500">میلیارد</span></div>
-                        <div class="text-[11px] text-gray-500 font-bold mt-1">جذب سرمایه تا کنون</div>
-                        <span class="text-[9px] text-gray-400 font-mono dir-ltr mt-1"><?php echo toFarsiDigits(number_format($total_collected)); ?> ریال</span>
+                        <div class="text-2xl font-black text-emerald-600 flex items-baseline justify-center gap-1">
+                            <span><?php echo toFarsiDigits(number_format($total_collected / 1000000000, 1)); ?></span>
+                            <span class="text-xs font-bold text-emerald-800">میلیارد</span>
+                        </div>
+                        <div class="text-xs text-gray-600 font-bold mt-1.5">جذب سرمایه تا کنون</div>
+                        <div class="mt-2.5 px-3 py-1 rounded-xl bg-emerald-50/70 border border-emerald-100 text-xs font-black text-emerald-900 flex items-center gap-1">
+                            <span><?php echo toFarsiDigits(number_format($total_collected)); ?></span>
+                            <span class="text-[10px] font-bold text-emerald-700">ریال</span>
+                        </div>
                     </a>
 
                     <!-- 4. Total Expenses (Cost) -->
-                    <a href="financial.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                    <a href="financial.php" class="bg-white p-6 rounded-[2.2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
                         <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">📤</div>
-                        <div class="text-xl font-black text-rose-600 font-mono"><?php echo toFarsiDigits(number_format($total_expenses / 1000000000, 1)); ?> <span class="text-xs font-bold text-gray-500">میلیارد</span></div>
-                        <div class="text-[11px] text-gray-500 font-bold mt-1">هزینه انجام‌شده تا کنون</div>
-                        <span class="text-[9px] text-gray-400 font-mono dir-ltr mt-1"><?php echo toFarsiDigits(number_format($total_expenses)); ?> ریال</span>
+                        <div class="text-2xl font-black text-rose-600 flex items-baseline justify-center gap-1">
+                            <span><?php echo toFarsiDigits(number_format($total_expenses / 1000000000, 1)); ?></span>
+                            <span class="text-xs font-bold text-rose-800">میلیارد</span>
+                        </div>
+                        <div class="text-xs text-gray-600 font-bold mt-1.5">هزینه انجام‌شده تا کنون</div>
+                        <div class="mt-2.5 px-3 py-1 rounded-xl bg-rose-50/70 border border-rose-100 text-xs font-black text-rose-900 flex items-center gap-1">
+                            <span><?php echo toFarsiDigits(number_format($total_expenses)); ?></span>
+                            <span class="text-[10px] font-bold text-rose-700">ریال</span>
+                        </div>
                     </a>
 
                     <!-- 5. Bank Balance -->
-                    <a href="financial.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                    <a href="financial.php" class="bg-white p-6 rounded-[2.2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
                         <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">🏦</div>
-                        <div class="text-xl font-black text-teal-700 font-mono"><?php echo toFarsiDigits(number_format($bank_balance / 1000000000, 2)); ?> <span class="text-xs font-bold text-gray-500">میلیارد</span></div>
-                        <div class="text-[11px] text-gray-500 font-bold mt-1">موجودی بانک (تراز حساب)</div>
-                        <span class="text-[9px] text-teal-600 font-bold font-mono dir-ltr mt-1 bg-teal-50/70 px-2 py-0.5 rounded-full"><?php echo toFarsiDigits(number_format($bank_balance)); ?> ریال</span>
+                        <div class="text-2xl font-black text-teal-600 flex items-baseline justify-center gap-1">
+                            <span><?php echo toFarsiDigits(number_format($bank_balance / 1000000000, 2)); ?></span>
+                            <span class="text-xs font-bold text-teal-800">میلیارد</span>
+                        </div>
+                        <div class="text-xs text-gray-600 font-bold mt-1.5">موجودی بانک (تراز حساب)</div>
+                        <div class="mt-2.5 px-3 py-1 rounded-xl bg-teal-50/80 border border-teal-100 text-xs font-black text-teal-900 flex items-center gap-1">
+                            <span><?php echo toFarsiDigits(number_format($bank_balance)); ?></span>
+                            <span class="text-[10px] font-bold text-teal-700">ریال</span>
+                        </div>
                     </a>
                 </div>
 
