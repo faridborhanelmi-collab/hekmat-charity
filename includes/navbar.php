@@ -5,63 +5,75 @@ if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
 }
 require_once __DIR__ . '/auth.php';
 ?>
-<nav class="fixed top-0 w-full z-[100] bg-white/85 backdrop-blur-xl border-b border-gray-100 shadow-xs">
+<nav class="fixed top-0 w-full z-[100] bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-xs">
     <div class="container mx-auto px-6 py-3.5 flex justify-between items-center relative">
-        <div class="flex items-center gap-6 lg:gap-8">
-            <div class="flex items-center gap-2.5 border-l pl-4 border-gray-200">
-                <div class="w-9 h-9 bg-gradient-to-tr from-teal-600 to-emerald-400 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm">
+        <!-- Logo & Navigation Links -->
+        <div class="flex items-center gap-8 lg:gap-10">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-2.5 border-l pl-5 border-gray-200">
+                <div class="w-10 h-10 bg-gradient-to-tr from-teal-600 to-emerald-400 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-md shadow-teal-500/20">
                     ح
                 </div>
                 <a href="index.php" class="text-base font-black text-primary-900 hover:text-teal-700 transition-colors">بنیاد حکمت</a>
             </div>
             
-            <!-- Desktop Links (تمیز و خلوت) -->
-            <div class="hidden md:flex items-center space-x-reverse space-x-8 text-xs lg:text-sm font-bold text-gray-700">
-                <a href="about.php" class="hover:text-teal-600 transition-colors py-1">داستان ما</a>
-                <a href="burs-hekmat.php" class="hover:text-teal-600 transition-colors py-1">بورس حکمت</a>
-                <a href="index.php#services" class="hover:text-teal-600 transition-colors py-1">خدمات</a>
+            <!-- Desktop Links (کاملاً تفکیک‌شده و با فاصله عالی) -->
+            <div class="hidden md:flex items-center text-sm font-bold text-gray-700">
+                <a href="about.php" class="px-4 py-2 rounded-xl hover:text-teal-700 hover:bg-teal-50/70 transition-all" style="margin-left: 1.5rem;">داستان ما</a>
+                <a href="burs-hekmat.php" class="px-4 py-2 rounded-xl hover:text-teal-700 hover:bg-teal-50/70 transition-all" style="margin-left: 1.5rem;">بورس حکمت</a>
+                <a href="index.php#services" class="px-4 py-2 rounded-xl hover:text-teal-700 hover:bg-teal-50/70 transition-all">خدمات</a>
             </div>
         </div>
 
-        <!-- Desktop Login/Dashboard Button -->
+        <!-- Desktop Actions: Integrated Glassmorphism Island -->
         <div class="hidden md:block">
             <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                <div class="flex items-center gap-2.5">
-                    <!-- فانتزی و مینیمال بدون اموجی گاز -->
-                    <a href="admin/index.php" class="group relative inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-l from-slate-900 via-primary-900 to-teal-900 hover:from-teal-800 hover:to-slate-900 text-white text-xs font-black shadow-md shadow-teal-900/15 border border-teal-500/30 transition-all transform hover:-translate-y-0.5">
-                        <span class="w-5 h-5 rounded-lg bg-teal-400/20 text-teal-300 flex items-center justify-center transition-transform group-hover:scale-110">
-                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2L14.4 8.6L21 11L14.4 13.4L12 20L9.6 13.4L3 11L9.6 8.6L12 2Z"/>
-                            </svg>
-                        </span>
+                <!-- جزیره یکپارچه، شیک و فانتزی پنل مدیریت و خروج -->
+                <div class="flex items-center bg-gray-50/90 hover:bg-gray-100/90 p-1.5 rounded-2xl border border-gray-200/80 shadow-xs transition-all">
+                    <!-- دکمه پرمیوم پنل مدیریت -->
+                    <a href="admin/index.php" class="group flex items-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-black shadow-sm transition-all transform hover:-translate-y-0.5">
+                        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
                         <span>پنل مدیریت</span>
+                        <svg class="w-3.5 h-3.5 text-teal-100 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                        </svg>
                     </a>
-                    <a href="admin-logout.php" class="text-xs text-rose-600 hover:text-white font-black bg-rose-50 hover:bg-rose-500 border border-rose-200/80 px-3.5 py-2 rounded-2xl transition-all shadow-xs flex items-center gap-1.5 hover:-translate-y-0.5">
+
+                    <!-- خط حائل ظریف -->
+                    <div class="w-px h-5 bg-gray-300 mx-1.5"></div>
+
+                    <!-- دکمه خروج هماهنگ و مینیمال -->
+                    <a href="admin-logout.php" class="group flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-rose-600 px-3 py-2 rounded-xl hover:bg-rose-50/80 transition-all" title="خروج از حساب">
+                        <svg class="w-4 h-4 text-gray-400 group-hover:text-rose-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
                         <span>خروج</span>
                     </a>
                 </div>
             <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
-                <div class="flex items-center gap-2.5">
-                    <a href="student-dashboard.php" class="bg-primary-900 hover:bg-teal-700 text-white px-4 py-2 rounded-2xl font-black text-xs transition-all shadow-sm flex items-center gap-1.5">
+                <div class="flex items-center bg-gray-50 p-1.5 rounded-2xl border border-gray-200/80 shadow-xs">
+                    <a href="student-dashboard.php" class="flex items-center gap-2 bg-primary-900 hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-xs font-black shadow-sm transition-all">
                         <span>🎓</span>
                         <span>میز کار دانش‌آموز</span>
                     </a>
-                    <a href="admin-logout.php" class="text-xs text-rose-600 hover:text-white font-black bg-rose-50 hover:bg-rose-500 border border-rose-200/80 px-3.5 py-2 rounded-2xl transition-all shadow-xs">
+                    <div class="w-px h-5 bg-gray-300 mx-1.5"></div>
+                    <a href="admin-logout.php" class="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-rose-600 px-3 py-2 rounded-xl hover:bg-rose-50 transition-all">
                         <span>خروج</span>
                     </a>
                 </div>
             <?php elseif (isset($_SESSION['user_id']) && ($_SESSION['role'] ?? '') === 'benefactor'): ?>
-                <div class="flex items-center gap-2.5">
-                    <a href="donor-dashboard.php" class="bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-2xl font-black text-xs transition-all shadow-sm inline-flex items-center gap-1.5">
+                <div class="flex items-center bg-gray-50 p-1.5 rounded-2xl border border-gray-200/80 shadow-xs">
+                    <a href="donor-dashboard.php" class="flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-xl text-xs font-black shadow-sm transition-all">
                         <span>💎</span>
                         <span>داشبورد حامیان</span>
                     </a>
-                    <a href="login.php?action=logout" class="text-xs text-rose-600 hover:text-white font-black bg-rose-50 hover:bg-rose-500 border border-rose-200/80 px-3.5 py-2 rounded-2xl transition-all shadow-xs">
+                    <div class="w-px h-5 bg-gray-300 mx-1.5"></div>
+                    <a href="login.php?action=logout" class="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-rose-600 px-3 py-2 rounded-xl hover:bg-rose-50 transition-all">
                         <span>خروج</span>
                     </a>
                 </div>
             <?php else: ?>
-                <a href="login.php" class="bg-gradient-to-l from-primary-900 to-teal-800 hover:from-teal-700 hover:to-primary-900 text-white px-5 py-2 rounded-2xl font-black text-xs transition-all shadow-sm">
+                <a href="login.php" class="bg-gradient-to-l from-primary-900 via-primary-800 to-teal-800 hover:from-teal-700 hover:to-primary-900 text-white px-6 py-2.5 rounded-2xl font-black text-xs transition-all shadow-md hover:-translate-y-0.5 transform">
                     ورود به پنل کاربری
                 </a>
             <?php endif; ?>
@@ -87,7 +99,7 @@ require_once __DIR__ . '/auth.php';
             <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
                 <div class="pt-4 border-t border-white/20 space-y-2">
                     <a href="admin/index.php" class="bg-gradient-to-r from-teal-500 to-emerald-600 text-slate-950 py-3 px-6 rounded-2xl block font-black shadow-lg">
-                        ✨ ورود به پنل مدیریت
+                        ورود به پنل مدیریت
                     </a>
                     <a href="admin-logout.php" class="text-rose-400 py-2 block text-sm font-bold">خروج از حساب کاربری</a>
                 </div>
