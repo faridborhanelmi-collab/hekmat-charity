@@ -24,7 +24,9 @@ $today_logs_count = $can_view_logs ? ($pdo->query("SELECT COUNT(*) FROM audit_lo
 $active_students = $pdo->query("SELECT COUNT(*) FROM students WHERE status IN ('active', 'university')")->fetchColumn();
 $total_students = $pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
 $total_donors = $pdo->query("SELECT COUNT(*) FROM donors")->fetchColumn();
-$total_collected = $pdo->query("SELECT SUM(total_donated) FROM donors")->fetchColumn();
+$total_collected = (float)($pdo->query("SELECT SUM(total_donated) FROM donors")->fetchColumn() ?: 0);
+$total_expenses = (float)($pdo->query("SELECT SUM(amount) FROM expenses")->fetchColumn() ?: 0);
+$bank_balance = $total_collected - $total_expenses;
 
 // 2. Inactive Donors (> 90 days) - Exclude CEO/Management from inactive list
 $inactive_query = "
@@ -377,23 +379,47 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                 </div>
                 <?php endif; ?>
 
-                <!-- Stats Overview -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
-                        <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-2xl mb-4">🎓</div>
-                        <div class="text-3xl font-black text-primary-900"><?php echo toFarsiDigits($active_students); ?> <span class="text-xs font-normal text-gray-400">/ <?php echo toFarsiDigits($total_students); ?></span></div>
-                        <div class="text-[10px] text-gray-400 font-bold">دانش‌آموز تحت پوشش (فعال)</div>
-                    </div>
-                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
-                        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mb-4">🤝</div>
-                        <div class="text-3xl font-black text-primary-900"><?php echo toFarsiDigits($total_donors); ?></div>
-                        <div class="text-[10px] text-gray-400 font-bold">نیکوکار فعال</div>
-                    </div>
-                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
-                        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-2xl mb-4">💰</div>
-                        <div class="text-2xl font-black text-primary-900"><?php echo toFarsiDigits(number_format($total_collected / 1000000000, 1)); ?> <span class="text-xs">میلیارد</span></div>
-                        <div class="text-[10px] text-gray-400 font-bold">جذب سرمایه (ریال)</div>
-                    </div>
+                <!-- Stats Overview (5 Key Pillars) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5">
+                    <!-- 1. Students -->
+                    <a href="../people-list.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                        <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">🎓</div>
+                        <div class="text-2xl font-black text-primary-900 font-mono"><?php echo toFarsiDigits($active_students); ?> <span class="text-xs font-normal text-gray-400">/ <?php echo toFarsiDigits($total_students); ?></span></div>
+                        <div class="text-[11px] text-gray-500 font-bold mt-1">دانش‌آموز تحت پوشش</div>
+                        <span class="text-[9px] text-teal-600 font-bold mt-1 bg-teal-50 px-2 py-0.5 rounded-full">فعال در سامانه</span>
+                    </a>
+
+                    <!-- 2. Donors -->
+                    <a href="../donors-list.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">🤝</div>
+                        <div class="text-2xl font-black text-primary-900 font-mono"><?php echo toFarsiDigits($total_donors); ?></div>
+                        <div class="text-[11px] text-gray-500 font-bold mt-1">نیکوکار و حامی فعال</div>
+                        <span class="text-[9px] text-indigo-600 font-bold mt-1 bg-indigo-50 px-2 py-0.5 rounded-full">جامعه خیرین</span>
+                    </a>
+
+                    <!-- 3. Total Collected (Income) -->
+                    <a href="financial.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">💰</div>
+                        <div class="text-xl font-black text-emerald-700 font-mono"><?php echo toFarsiDigits(number_format($total_collected / 1000000000, 1)); ?> <span class="text-xs font-bold text-gray-500">میلیارد</span></div>
+                        <div class="text-[11px] text-gray-500 font-bold mt-1">جذب سرمایه تا کنون</div>
+                        <span class="text-[9px] text-gray-400 font-mono dir-ltr mt-1"><?php echo toFarsiDigits(number_format($total_collected)); ?> ریال</span>
+                    </a>
+
+                    <!-- 4. Total Expenses (Cost) -->
+                    <a href="financial.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">📤</div>
+                        <div class="text-xl font-black text-rose-600 font-mono"><?php echo toFarsiDigits(number_format($total_expenses / 1000000000, 1)); ?> <span class="text-xs font-bold text-gray-500">میلیارد</span></div>
+                        <div class="text-[11px] text-gray-500 font-bold mt-1">هزینه انجام‌شده تا کنون</div>
+                        <span class="text-[9px] text-gray-400 font-mono dir-ltr mt-1"><?php echo toFarsiDigits(number_format($total_expenses)); ?> ریال</span>
+                    </a>
+
+                    <!-- 5. Bank Balance -->
+                    <a href="financial.php" class="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-lg border border-gray-100 flex flex-col items-center text-center transition-all group">
+                        <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform">🏦</div>
+                        <div class="text-xl font-black text-teal-700 font-mono"><?php echo toFarsiDigits(number_format($bank_balance / 1000000000, 2)); ?> <span class="text-xs font-bold text-gray-500">میلیارد</span></div>
+                        <div class="text-[11px] text-gray-500 font-bold mt-1">موجودی بانک (تراز حساب)</div>
+                        <span class="text-[9px] text-teal-600 font-bold font-mono dir-ltr mt-1 bg-teal-50/70 px-2 py-0.5 rounded-full"><?php echo toFarsiDigits(number_format($bank_balance)); ?> ریال</span>
+                    </a>
                 </div>
 
                 <!-- Live Psychometrics & Interview Engine Banner -->
@@ -422,13 +448,15 @@ $library_pending_requests = $pdo->query("SELECT COUNT(*) FROM library_books WHER
                         </div>
                     </div>
                     <div class="flex flex-col sm:flex-row items-center gap-3 relative z-10 w-full md:w-auto justify-end flex-shrink-0">
-                        <a href="/admin-interview-tests.php" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-xl shadow-teal-500/30 flex items-center justify-center gap-2">
-                            <span>ورود به سامانه و صدور لینک آزمون</span>
+                        <a href="/admin-interview-tests.php" class="w-full sm:w-auto px-5 py-3.5 bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-slate-950 font-black text-xs rounded-2xl transition-all shadow-xl shadow-teal-500/30 flex items-center justify-center gap-2">
+                            <span>ورود به سامانه و لیست داوطلبان</span>
                             <span>←</span>
                         </a>
-                        <a href="/interview-test.php?demo=1" target="_blank" class="w-full sm:w-auto px-4 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5">
-                            <span>پیش‌نمایش آزمون</span>
-                            <span>👁️</span>
+                        <a href="/admin-interview-tests.php?filter=completed" class="w-full sm:w-auto px-4 py-3.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-200 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5 shadow-lg">
+                            <span>🎙️ اتاق مصاحبه و پرونده‌ها</span>
+                        </a>
+                        <a href="/interview-test.php?demo=1" target="_blank" class="w-full sm:w-auto px-3.5 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-1.5">
+                            <span>👁️ تست آزمایشی</span>
                         </a>
                     </div>
                 </div>
