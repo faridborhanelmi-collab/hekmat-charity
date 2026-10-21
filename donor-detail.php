@@ -43,7 +43,7 @@ $documents = $doc_stmt->fetchAll();
 
 // Fetch Sponsored Students for this donor
 $spon_stmt = $pdo->prepare("
-    SELECT s.id as spon_id, s.shares_count, s.start_date, st.id as student_id, st.name as st_name, st.surname as st_surname, st.code as st_code, st.alias_name, st.grade
+    SELECT s.id as spon_id, s.shares_count, s.start_date, st.id as student_id, st.name as st_name, st.surname as st_surname, st.code as st_code, st.alias_name, st.grade, st.photo_path
     FROM sponsorships s
     JOIN students st ON s.student_id = st.id
     WHERE s.donor_id = ? AND s.status = 'active'
@@ -265,9 +265,20 @@ $default_sms_preview = $smsService->renderTemplate(
                             <?php foreach ($sponsored_students as $st): ?>
                             <div class="bg-gray-50 border border-gray-100 p-5 rounded-3xl flex items-center justify-between hover:bg-teal-50/30 transition-all">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-600 flex items-center justify-center text-xl font-black">
-                                        🎓
-                                    </div>
+                                    <a href="person-detail.php?id=<?php echo $st['student_id']; ?>" class="shrink-0 group/av" title="مشاهده پرونده <?php echo htmlspecialchars($st['st_name'] . ' ' . $st['st_surname']); ?>">
+                                        <?php if (!empty($st['photo_path']) && (file_exists(__DIR__ . '/' . $st['photo_path']) || file_exists($st['photo_path']))): ?>
+                                            <div class="w-12 h-12 rounded-2xl overflow-hidden border-2 border-white shadow-sm ring-1 ring-teal-500/20 group-hover/av:scale-105 transition-all bg-teal-50 relative shrink-0">
+                                                <img src="<?php echo htmlspecialchars($st['photo_path']); ?>" alt="پرتره" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.style.display='none'; this.parentElement.nextElementSibling.style.display='flex';">
+                                            </div>
+                                            <div class="hidden w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-600 items-center justify-center text-xl font-black shrink-0">
+                                                🎓
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-600 flex items-center justify-center text-xl font-black group-hover/av:scale-105 transition-all shrink-0">
+                                                🎓
+                                            </div>
+                                        <?php endif; ?>
+                                    </a>
                                     <div>
                                         <div class="text-sm font-black text-gray-900 flex items-center gap-2">
                                             <a href="person-detail.php?id=<?php echo $st['student_id']; ?>" class="hover:text-teal-600">

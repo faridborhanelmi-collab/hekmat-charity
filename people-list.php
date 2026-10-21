@@ -264,11 +264,32 @@ foreach ($students as $s) {
                     </div>
 
                     <div class="flex flex-col items-center text-center">
-                        <div class="w-20 h-20 <?php echo $icon_style; ?> rounded-[1.5rem] flex items-center justify-center text-3xl font-black mb-3 shadow-inner">
-                            <?php echo mb_substr($p['name'], 0, 1); ?>
-                        </div>
+                        <?php 
+                        $has_photo = !empty($p['photo_path']) && (file_exists(__DIR__ . '/' . $p['photo_path']) || file_exists($p['photo_path']));
+                        $initial_letter = mb_substr(trim($p['name'] ?: ($p['surname'] ?: '؟')), 0, 1);
+                        ?>
+                        <a href="person-detail.php?id=<?php echo $p['id']; ?>" class="block group/avatar mb-3 relative shrink-0" title="مشاهده پرونده <?php echo htmlspecialchars($student_full_name); ?>">
+                            <?php if ($has_photo): ?>
+                                <div class="w-20 h-20 rounded-[1.5rem] overflow-hidden shadow-md border-2 border-white ring-2 ring-teal-500/20 group-hover/avatar:ring-teal-500 group-hover/avatar:scale-105 transition-all bg-teal-50 relative shrink-0">
+                                    <img src="<?php echo htmlspecialchars($p['photo_path']); ?>" 
+                                         alt="<?php echo htmlspecialchars($student_full_name); ?>" 
+                                         class="w-full h-full object-cover <?php echo $is_inactive ? 'grayscale opacity-75' : ''; ?>"
+                                         loading="lazy"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="hidden w-full h-full <?php echo $icon_style; ?> items-center justify-center text-3xl font-black">
+                                        <?php echo $initial_letter; ?>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <div class="w-20 h-20 <?php echo $icon_style; ?> rounded-[1.5rem] flex items-center justify-center text-3xl font-black shadow-inner group-hover/avatar:scale-105 transition-transform shrink-0">
+                                    <?php echo $initial_letter; ?>
+                                </div>
+                            <?php endif; ?>
+                        </a>
                         
-                        <h3 class="text-base font-black text-primary-900 mb-0.5"><?php echo htmlspecialchars($student_full_name); ?></h3>
+                        <a href="person-detail.php?id=<?php echo $p['id']; ?>" class="hover:text-teal-600 transition-colors">
+                            <h3 class="text-base font-black text-primary-900 mb-0.5 hover:text-teal-600 transition-colors"><?php echo htmlspecialchars($student_full_name); ?></h3>
+                        </a>
                         <?php if (!empty($p['alias_name'])): ?>
                         <p class="text-[10px] text-teal-600 font-bold mb-2 bg-teal-50/80 px-3 py-0.5 rounded-full"><?php echo htmlspecialchars($p['alias_name']); ?></p>
                         <?php else: ?>
